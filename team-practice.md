@@ -5,3 +5,4 @@
 - Keep pull requests small and focused on a single task.
 - Verify status with `git status` before committing.
 - Check the Files changed tab before approving a pull request.
+- Before creating a pull request, review your changes with `git diff` to ensure that only the intended files are included.
