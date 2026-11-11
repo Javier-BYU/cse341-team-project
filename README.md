@@ -64,6 +64,11 @@ This repository is set up as a **GitHub template**. Use the template feature to 
 8. Run the automated tests with `npm test`. Tests use a temporary local database and do not change the database in your `.env` file.
 9. Start the development server: `npm run dev`
 
+### API Documentation
+
+When the server is running, open the Swagger UI at [http://localhost:3000/api-docs](http://localhost:3000/api-docs).
+It documents the `GET /api/trips` and `GET /api/trips/{id}` endpoints.
+
 The first test run may take longer because MongoDB Memory Server needs to download a MongoDB program. Later test runs reuse that download. Use `npm run test:watch` if you want Vitest to rerun related tests while you work.
 
 ### Automated Test Setup
