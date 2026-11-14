@@ -15,8 +15,9 @@ const trainSchema = new mongoose.Schema(
       trim: true,
     },
     operator: {
-      type: String,
+      type: mongoose.Schema.Types.ObjectId,
       required: true,
+      ref: 'Operator',
       trim: true,
     },
     imageUrl: {
@@ -33,6 +34,7 @@ const trainSchema = new mongoose.Schema(
       type: String,
       required: true,
       trim: true,
+      enum: ['High-Speed', 'Passenger', 'Freight', 'Commuter'],
     },
     maxSpeedKmh: {
       type: Number,

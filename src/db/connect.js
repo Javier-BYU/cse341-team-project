@@ -26,6 +26,7 @@ const connectToDb = async (options = {}) => {
     throw error;
   }
   database = client.db(databaseName);
+  await mongoose.connect(connectionString, { dbName: databaseName });
   return database;
 };
 
@@ -37,6 +38,7 @@ const getDb = () => {
 };
 
 const closeDb = async () => {
+<<<<<<< HEAD
   const currentClient = client;
   client = undefined;
   database = undefined;
@@ -44,6 +46,14 @@ const closeDb = async () => {
     currentClient ? currentClient.close() : Promise.resolve(),
     mongoose.disconnect()
   ]);
+=======
+  if (client) {
+    await client.close();
+    await mongoose.disconnect();
+    client = undefined;
+    database = undefined;
+  }
+>>>>>>> main
 };
 
 export { closeDb, connectToDb, getDb };
