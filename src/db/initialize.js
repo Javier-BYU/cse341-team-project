@@ -6,7 +6,17 @@ import trains from './seeds/trains.json' with { type: 'json' };
 
 const starterCollections = [
   ['trips', trips],
-  ['schedules', schedules],
+  [
+    'schedules',
+    schedules.map((schedule) => {
+      const trip = trips.find(({ id }) => id === schedule.tripId);
+      if (!trip) {
+        throw new Error(`No trip found for schedule ${schedule.id}.`);
+      }
+
+      return { ...schedule, months: trip.operatingMonths };
+    })
+  ],
   ['stations', stations],
   ['ticketClasses', ticketClasses],
   ['trains', trains]

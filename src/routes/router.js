@@ -1,6 +1,7 @@
 import railTripsRouter from './trips.js';
 import { trainsApi, trainsPage } from './trains.js';
 import { Router } from 'express';
+import apiRoutes from './api-routes.js';
 import { homePage, aboutPage, testErrorPage } from './index.js';
 
 const router = Router();
@@ -16,6 +17,9 @@ router.get('/trains', trainsPage);
 
 // Trains API
 router.get('/api/trains', trainsApi);
+
+// API routes
+router.use('/api', apiRoutes);
 
 // Rail trips
 router.use('/trips', railTripsRouter);
