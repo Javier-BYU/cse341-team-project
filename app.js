@@ -1,10 +1,10 @@
 import express from 'express';
 import Path from 'path';
 import { fileURLToPath } from 'url';
+import swaggerUi from 'swagger-ui-express';
 import pkg from './package.json' with { type: 'json' };
 import globalMiddleware from './src/middleware/global.js';
 import routes from './src/routes/router.js';
-import swaggerUi from 'swagger-ui-express';
 import swaggerSpec from './src/config/swagger.js';
 
 const __filename = fileURLToPath(import.meta.url);

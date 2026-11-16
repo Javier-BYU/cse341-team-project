@@ -68,35 +68,110 @@
             </div>
         </div>
 
-        <% if (details.schedules && details.schedules.length > 0) { %>
         <div class="route-schedules">
             <h2>Available Schedules</h2>
-            <div class="schedules-grid">
-                <% details.schedules.forEach(function(schedule) { %>
-                <div class="schedule-card">
-                    <div class="schedule-times">
-                        <div class="time-block">
-                            <span class="time-label">Departs</span>
-                            <span class="time-value"><%= schedule.departureTime %></span>
-                        </div>
-                        <span class="time-arrow">→</span>
-                        <div class="time-block">
-                            <span class="time-label">Arrives</span>
-                            <span class="time-value"><%= schedule.arrivalTime %></span>
-                        </div>
-                    </div>
-                    <div class="schedule-days">
-                        <% schedule.daysOfWeek.forEach(function(day) { %>
-                        <span class="day-badge"><%= day.substring(0, 3) %></span>
-                        <% }); %>
-                    </div>
-                    <a href="/trips/booking/<%= schedule.id %>" class="book-btn">Book Now</a>
-                </div>
+            <label for="schedule-month">Month</label>
+            <select id="schedule-month">
+                <option value="">All operating months</option>
+                <% details.operatingMonths.forEach(function(month) { %>
+                <option value="<%= month %>"><%= new Date(2000, month - 1).toLocaleString('en', { month: 'long' }) %></option>
                 <% }); %>
-            </div>
+            </select>
+            <p id="schedule-status" aria-live="polite">Loading schedules...</p>
+            <div id="schedules-grid" class="schedules-grid" data-trip-id="<%= details.id %>"></div>
         </div>
-        <% } %>
     </div>
 </article>
+
+<script>
+    const monthSelector = document.getElementById('schedule-month');
+    const schedulesGrid = document.getElementById('schedules-grid');
+    const scheduleStatus = document.getElementById('schedule-status');
+
+    function showScheduleMessage(message) {
+        scheduleStatus.textContent = message;
+        schedulesGrid.replaceChildren();
+    }
+
+    function createScheduleCard(schedule) {
+        const card = document.createElement('div');
+        card.className = 'schedule-card';
+
+        const times = document.createElement('div');
+        times.className = 'schedule-times';
+        for (const [label, time] of [
+            ['Departs', schedule.departureTime],
+            ['Arrives', schedule.arrivalTime]
+        ]) {
+            const block = document.createElement('div');
+            block.className = 'time-block';
+            const timeLabel = document.createElement('span');
+            timeLabel.className = 'time-label';
+            timeLabel.textContent = label;
+            const timeValue = document.createElement('span');
+            timeValue.className = 'time-value';
+            timeValue.textContent = time;
+            block.append(timeLabel, timeValue);
+            times.append(block);
+            if (label === 'Departs') {
+                const arrow = document.createElement('span');
+                arrow.className = 'time-arrow';
+                arrow.textContent = '→';
+                times.append(arrow);
+            }
+        }
+        card.append(times);
+
+        const days = document.createElement('div');
+        days.className = 'schedule-days';
+        for (const day of schedule.daysOfWeek) {
+            const badge = document.createElement('span');
+            badge.className = 'day-badge';
+            badge.textContent = day.substring(0, 3);
+            days.append(badge);
+        }
+        card.append(days);
+
+        const bookingLink = document.createElement('a');
+        bookingLink.className = 'book-btn';
+        bookingLink.href = `/trips/booking/${encodeURIComponent(schedule.id)}`;
+        bookingLink.textContent = 'Book Now';
+        card.append(bookingLink);
+
+        return card;
+    }
+
+    async function loadSchedules() {
+        const month = monthSelector.value;
+        const tripId = schedulesGrid.dataset.tripId;
+        const monthQuery = month ? `?month=${encodeURIComponent(month)}` : '';
+        scheduleStatus.textContent = 'Loading schedules...';
+
+        try {
+            const response = await fetch(
+                `/api/trips/${encodeURIComponent(tripId)}/schedules${monthQuery}`
+            );
+            const schedules = await response.json();
+
+            if (response.status === 404) {
+                showScheduleMessage('No schedules available for this month.');
+                return;
+            }
+            if (!response.ok) {
+                throw new Error(schedules.error || 'Unable to load schedules.');
+            }
+
+            schedulesGrid.replaceChildren(...schedules.map(createScheduleCard));
+            scheduleStatus.textContent = schedules.length
+                ? ''
+                : 'No schedules available for this month.';
+        } catch (error) {
+            showScheduleMessage(error.message);
+        }
+    }
+
+    monthSelector.addEventListener('change', loadSchedules);
+    loadSchedules();
+</script>
 
 <%- include('../partials/footer') %>
