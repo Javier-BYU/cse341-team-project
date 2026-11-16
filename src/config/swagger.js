@@ -58,6 +58,7 @@ const swaggerDefinition = {
                     imageUrl: { type: 'string', format: 'uri' },
                 },
             },
+
             Schedule: {
                 type: 'object',
                 properties: {
@@ -76,6 +77,7 @@ const swaggerDefinition = {
                     status: { type: 'boolean' },
                 },
             },
+
             Passenger: {
                 type: 'object',
                 required: [
@@ -104,6 +106,45 @@ const swaggerDefinition = {
                     },
                 },
             },
+
+            CreateBooking: {
+                type: 'object',
+                required: [
+                    'scheduleId',
+                    'tripId',
+                    'ticketClass',
+                    'selectedDay',
+                    'passengers',
+                ],
+                properties: {
+                    scheduleId: {
+                        type: 'integer',
+                        example: 101,
+                        description: 'ID of the selected train schedule.',
+                    },
+                    tripId: {
+                        type: 'string',
+                        example: 'alpine-panorama',
+                        description: 'ID of the selected scenic trip.',
+                    },
+                    ticketClass: {
+                        type: 'string',
+                        example: 'First Class',
+                    },
+                    selectedDay: {
+                        type: 'string',
+                        example: 'Monday',
+                    },
+                    passengers: {
+                        type: 'array',
+                        minItems: 1,
+                        items: {
+                            $ref: '#/components/schemas/Passenger',
+                        },
+                    },
+                },
+            },
+
             Booking: {
                 type: 'object',
                 required: [
@@ -151,6 +192,7 @@ const swaggerDefinition = {
                     },
                 },
             },
+
             Error: {
                 type: 'object',
                 properties: {

@@ -1,11 +1,19 @@
 
 import { Router } from 'express';
-import { getAllTrips, getTripById } from '../controllers/trips.js';
+import {
+    getAllTrips,
+    getTripById,
+    createTrip
+} from '../controllers/trips.js';
 import {
     getSchedulesForTrip,
     getSchedulesForTripAndMonth,
+    createSchedule
 } from '../controllers/schedules.js';
-import { getAllBookings } from '../controllers/bookings.js';
+import {
+    getAllBookings,
+    createBookingApi
+} from '../controllers/bookings.js';
 
 const router = Router();
 
@@ -24,8 +32,6 @@ const router = Router();
  *           application/json:
  *             schema:
  *               type: object
- *               required:
- *                 - trips
  *               properties:
  *                 trips:
  *                   type: array
@@ -37,8 +43,45 @@ const router = Router();
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *
+ *   post:
+ *     tags:
+ *       - Trips
+ *     summary: Add a new scenic train trip
+ *     description: Creates and saves a new scenic train trip.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Trip'
+ *           example:
+ *             id: alpine-panorama
+ *             name: Alpine Panorama Express
+ *             description: A scenic railway journey through the Japanese Alps.
+ *             region: Nagano
+ *             startStation: Matsumoto
+ *             endStation: Hakuba
+ *             duration: 2 hours 30 minutes
+ *             distance: 85.5
+ *             highlights:
+ *               - Mountain views
+ *               - Alpine forests
+ *             bestSeason: Spring and autumn
+ *             operatingMonths: [4, 5, 6, 9, 10, 11]
+ *             imageUrl: https://example.com/alpine-panorama.jpg
+ *     responses:
+ *       201:
+ *         description: Trip created successfully
+ *       400:
+ *         description: Invalid trip information
+ *       409:
+ *         description: A trip with this ID already exists
+ *       500:
+ *         description: Failed to create trip
  */
 router.get('/trips', getAllTrips);
+router.post('/trips', createTrip);
 
 /**
  * @swagger
@@ -63,16 +106,8 @@ router.get('/trips', getAllTrips);
  *               $ref: '#/components/schemas/Trip'
  *       404:
  *         description: Trip not found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Failed to fetch trip
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
 router.get('/trips/:id', getTripById);
 
@@ -101,30 +136,12 @@ router.get('/trips/:id', getTripById);
  *     responses:
  *       200:
  *         description: Matching trip schedules
- *         content:
- *           application/json:
- *             schema:
- *               type: array
- *               items:
- *                 $ref: '#/components/schemas/Schedule'
  *       400:
  *         description: Invalid month
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       404:
  *         description: No schedules found
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Server error
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/Error'
  */
 router.get('/trips/:tripId/schedules', (req, res) => {
     if (req.query.month !== undefined) {
@@ -133,6 +150,45 @@ router.get('/trips/:tripId/schedules', (req, res) => {
 
     return getSchedulesForTrip(req, res);
 });
+
+/**
+ * @swagger
+ * /api/schedules:
+ *   post:
+ *     tags:
+ *       - Schedules
+ *     summary: Create a train schedule
+ *     description: Creates a new schedule for an existing scenic trip.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Schedule'
+ *           example:
+ *             id: 101
+ *             tripId: alpine-panorama
+ *             departureTime: "09:00"
+ *             arrivalTime: "11:30"
+ *             daysOfWeek:
+ *               - Monday
+ *               - Wednesday
+ *               - Friday
+ *             months: [4, 5, 6, 9, 10, 11]
+ *             status: true
+ *     responses:
+ *       201:
+ *         description: Schedule created successfully
+ *       400:
+ *         description: Invalid schedule information
+ *       404:
+ *         description: Trip not found
+ *       409:
+ *         description: A schedule with this ID already exists
+ *       500:
+ *         description: Failed to create schedule
+ */
+router.post('/schedules', createSchedule);
 
 /**
  * @swagger
@@ -149,8 +205,6 @@ router.get('/trips/:tripId/schedules', (req, res) => {
  *           application/json:
  *             schema:
  *               type: object
- *               required:
- *                 - bookings
  *               properties:
  *                 bookings:
  *                   type: array
@@ -162,7 +216,39 @@ router.get('/trips/:tripId/schedules', (req, res) => {
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/Error'
+ *
+ *   post:
+ *     tags:
+ *       - Bookings
+ *     summary: Create a new booking
+ *     description: Creates and saves a train booking with passenger information.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/CreateBooking'
+ *           example:
+ *             scheduleId: 101
+ *             tripId: alpine-panorama
+ *             ticketClass: First Class
+ *             selectedDay: Monday
+ *             passengers:
+ *               - firstName: John
+ *                 lastName: Smith
+ *                 email: john@example.com
+ *                 phone: "+819012345678"
+ *     responses:
+ *       201:
+ *         description: Booking created successfully
+ *       400:
+ *         description: Missing or invalid booking information
+ *       404:
+ *         description: Schedule or trip not found
+ *       500:
+ *         description: Failed to create booking
  */
 router.get('/bookings', getAllBookings);
+router.post('/bookings', createBookingApi);
 
 export default router;

@@ -34,7 +34,6 @@ const bookingPage = async (req, res, next) => {
             return next(error);
         }
 
-        // Ticket classes still use the existing native MongoDB collection.
         const db = getDb();
         const ticketClasses = await db.collection('ticketClasses')
             .find({})
@@ -77,6 +76,83 @@ const processBookingRequest = async (req, res, next) => {
         );
     } catch (error) {
         return next(error);
+    }
+};
+
+// Creates a booking through the API.
+const createBookingApi = async (req, res) => {
+    try {
+        const {
+            scheduleId,
+            tripId,
+            ticketClass,
+            selectedDay,
+            passengers
+        } = req.body;
+
+        if (
+            scheduleId === undefined ||
+            !tripId ||
+            !ticketClass ||
+            !selectedDay ||
+            !Array.isArray(passengers) ||
+            passengers.length === 0
+        ) {
+            return res.status(400).json({
+                error: 'Missing or invalid booking information'
+            });
+        }
+
+        const schedule = await getScheduleById(scheduleId);
+
+        if (!schedule) {
+            return res.status(404).json({
+                error: 'Schedule not found'
+            });
+        }
+
+        if (String(schedule.tripId) !== String(tripId)) {
+            return res.status(400).json({
+                error: 'The selected schedule does not belong to this trip'
+            });
+        }
+
+        const trip = await getTripById(tripId);
+
+        if (!trip) {
+            return res.status(404).json({
+                error: 'Trip not found'
+            });
+        }
+
+        const booking = {
+            id: generateBookingReference(),
+            scheduleId: Number(scheduleId),
+            tripId,
+            ticketClass,
+            selectedDay,
+            passengers
+        };
+
+        await createBooking(booking);
+
+        return res.status(201).json({
+            message: 'Booking created successfully',
+            booking
+        });
+    } catch (error) {
+        console.error('Error creating booking:', error);
+
+        if (error.name === 'ValidationError') {
+            return res.status(400).json({
+                error: 'Invalid booking information',
+                details: error.message
+            });
+        }
+
+        return res.status(500).json({
+            error: 'Failed to create booking'
+        });
     }
 };
 
@@ -127,6 +203,7 @@ const bookingsAdminPage = (req, res) => {
 export {
     bookingPage,
     processBookingRequest,
+    createBookingApi,
     confirmationPage,
     getAllBookings,
     bookingsAdminPage

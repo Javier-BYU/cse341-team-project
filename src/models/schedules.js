@@ -1,6 +1,7 @@
 
 import Schedule from './schemas/schedules.js';
 
+// Retrieves schedules for a trip, optionally filtered by month.
 const getSchedulesByTripId = async (tripId, month) => {
     const query = { tripId };
 
@@ -11,8 +12,18 @@ const getSchedulesByTripId = async (tripId, month) => {
     return Schedule.find(query).lean();
 };
 
+// Retrieves one schedule using its numeric ID.
 const getScheduleById = async (id) => {
     return Schedule.findOne({ id: Number(id) }).lean();
 };
 
-export { getScheduleById, getSchedulesByTripId };
+// Creates and saves a new train schedule.
+const createSchedule = async (scheduleData) => {
+    return Schedule.create(scheduleData);
+};
+
+export {
+    getScheduleById,
+    getSchedulesByTripId,
+    createSchedule
+};
