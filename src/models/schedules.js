@@ -1,10 +1,18 @@
-import schedule from './schemas/schedules.js';
 
-export async function getSchedulesByTripId(tripId, month) {
-  const query = { tripId };
-  if (month !== undefined) {
-    query.months = month;
-  }
+import Schedule from './schemas/schedules.js';
 
-  return schedule.find(query).lean();
-}
+const getSchedulesByTripId = async (tripId, month) => {
+    const query = { tripId };
+
+    if (month !== undefined) {
+        query.months = month;
+    }
+
+    return Schedule.find(query).lean();
+};
+
+const getScheduleById = async (id) => {
+    return Schedule.findOne({ id: Number(id) }).lean();
+};
+
+export { getScheduleById, getSchedulesByTripId };

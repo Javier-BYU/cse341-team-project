@@ -1,9 +1,11 @@
+
 import { Router } from 'express';
 import { getAllTrips, getTripById } from '../controllers/trips.js';
 import {
-  getSchedulesForTrip,
-  getSchedulesForTripAndMonth,
+    getSchedulesForTrip,
+    getSchedulesForTripAndMonth,
 } from '../controllers/schedules.js';
+import { getAllBookings } from '../controllers/bookings.js';
 
 const router = Router();
 
@@ -125,11 +127,42 @@ router.get('/trips/:id', getTripById);
  *               $ref: '#/components/schemas/Error'
  */
 router.get('/trips/:tripId/schedules', (req, res) => {
-  if (req.query.month !== undefined) {
-    return getSchedulesForTripAndMonth(req, res);
-  }
+    if (req.query.month !== undefined) {
+        return getSchedulesForTripAndMonth(req, res);
+    }
 
-  return getSchedulesForTrip(req, res);
+    return getSchedulesForTrip(req, res);
 });
+
+/**
+ * @swagger
+ * /api/bookings:
+ *   get:
+ *     tags:
+ *       - Bookings
+ *     summary: Get all bookings
+ *     description: Returns all saved train bookings and their passenger details.
+ *     responses:
+ *       200:
+ *         description: A list of bookings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               required:
+ *                 - bookings
+ *               properties:
+ *                 bookings:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Booking'
+ *       500:
+ *         description: Failed to fetch bookings
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/bookings', getAllBookings);
 
 export default router;

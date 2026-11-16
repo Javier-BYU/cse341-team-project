@@ -1,0 +1,123 @@
+
+<%- include('partials/header') %>
+
+<article class="bookings-admin-page">
+    <header class="bookings-admin-header">
+        <h1><%= title %></h1>
+        <p>View and manage all train bookings made through Kizuna Rail.</p>
+    </header>
+
+    <section class="bookings-admin-content">
+        <div class="bookings-summary">
+            <h2>All Bookings</h2>
+            <p>
+                Total bookings:
+                <strong id="bookings-count">0</strong>
+            </p>
+        </div>
+
+        <p id="bookings-loading">Loading bookings...</p>
+
+        <p id="bookings-error" hidden>
+            Unable to load bookings. Please try again later.
+        </p>
+
+        <p id="bookings-empty" hidden>
+            No bookings have been made yet.
+        </p>
+
+        <div class="bookings-table-wrapper">
+            <table id="bookings-table" hidden>
+                <thead>
+                    <tr>
+                        <th>Booking Reference</th>
+                        <th>Trip</th>
+                        <th>Schedule ID</th>
+                        <th>Ticket Class</th>
+                        <th>Travel Day</th>
+                        <th>Passengers</th>
+                        <th>Booked On</th>
+                    </tr>
+                </thead>
+
+                <tbody id="bookings-list"></tbody>
+            </table>
+        </div>
+    </section>
+</article>
+
+<template id="booking-row-template">
+    <tr>
+        <td data-field="id"></td>
+        <td data-field="trip"></td>
+        <td data-field="schedule"></td>
+        <td data-field="ticket-class"></td>
+        <td data-field="travel-day"></td>
+        <td data-field="passengers"></td>
+        <td data-field="created-at"></td>
+    </tr>
+</template>
+
+<script>
+    const loadBookings = async () => {
+        const loadingEl = document.getElementById('bookings-loading');
+        const errorEl = document.getElementById('bookings-error');
+        const emptyEl = document.getElementById('bookings-empty');
+        const tableEl = document.getElementById('bookings-table');
+        const listEl = document.getElementById('bookings-list');
+        const countEl = document.getElementById('bookings-count');
+        const templateEl = document.getElementById('booking-row-template');
+
+        try {
+            const response = await fetch('/api/bookings');
+
+            if (!response.ok) {
+                throw new Error(`Failed to load bookings (${response.status})`);
+            }
+
+            const payload = await response.json();
+            const bookings = payload.bookings || [];
+
+            countEl.textContent = bookings.length;
+            listEl.replaceChildren();
+
+            if (bookings.length === 0) {
+                emptyEl.hidden = false;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+
+            bookings.forEach((booking) => {
+                const row = templateEl.content.cloneNode(true);
+
+                row.querySelector('[data-field="id"]').textContent = booking.id || 'N/A';
+                row.querySelector('[data-field="trip"]').textContent = booking.tripId || 'N/A';
+                row.querySelector('[data-field="schedule"]').textContent = booking.scheduleId ?? 'N/A';
+                row.querySelector('[data-field="ticket-class"]').textContent = booking.ticketClass || 'N/A';
+                row.querySelector('[data-field="travel-day"]').textContent = booking.selectedDay || 'N/A';
+                row.querySelector('[data-field="passengers"]').textContent = booking.passengers?.length ?? 0;
+
+                const bookingDate = booking.createdAt
+                    ? new Date(booking.createdAt).toLocaleDateString()
+                    : 'N/A';
+
+                row.querySelector('[data-field="created-at"]').textContent = bookingDate;
+
+                fragment.append(row);
+            });
+
+            listEl.append(fragment);
+            tableEl.hidden = false;
+        } catch (error) {
+            console.error('Unable to load bookings:', error);
+            errorEl.hidden = false;
+        } finally {
+            loadingEl.hidden = true;
+        }
+    };
+
+    document.addEventListener('DOMContentLoaded', loadBookings);
+</script>
+
+<%- include('partials/footer') %>
