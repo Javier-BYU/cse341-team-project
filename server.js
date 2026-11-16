@@ -1,11 +1,17 @@
+
 import app from './app.js';
 import { connectToDb } from './src/db/connect.js';
+import { initializeTicketClasses } from './src/db/initialize.js';
 
 const NODE_ENV = process.env.NODE_ENV?.toLowerCase() || 'production';
 const PORT = process.env.PORT || 3000;
 
 // Connect to MongoDB before accepting requests.
-await connectToDb();
+const db = await connectToDb();
+
+// Initialize ticket classes only if the collection is empty.
+// This does not delete existing bookings or other collections.
+await initializeTicketClasses(db);
 
 // Start the live-reload WebSocket server in development mode.
 if (NODE_ENV.includes('dev')) {
