@@ -1,0 +1,661 @@
+
+<%- include('partials/header') %>
+
+<style>
+    .bookings-admin-page {
+        max-width: 1400px;
+        width: 92%;
+        margin: 0 auto;
+        padding: 2.5rem 0 4rem;
+        color: #0a2544;
+        background: #f5f6f7;
+    }
+
+    /* Dashboard header */
+    .bookings-hero {
+        background: #ffffff;
+        color: #0a2544;
+        padding: 2.5rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 1px solid #e3e7eb;
+        border-left: 5px solid #f4c542;
+    }
+
+    .bookings-hero-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .bookings-hero h1 {
+        color: #123c69;
+        font-size: clamp(1.8rem, 4vw, 2.5rem);
+        margin: 0 0 0.6rem;
+    }
+
+    .bookings-hero p {
+        margin: 0;
+        color: #52677b;
+        line-height: 1.6;
+    }
+
+    .bookings-hero-label {
+        display: inline-block;
+        margin-bottom: 0.8rem;
+        color: #123c69;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+    }
+
+    /* Refresh button */
+    .bookings-refresh {
+        background: #f4c542;
+        color: #0a2544;
+        border: 1px solid #e0b52e;
+        border-radius: 8px;
+        padding: 0.85rem 1.2rem;
+        font-size: 0.95rem;
+        font-weight: 700;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.2s;
+    }
+
+    .bookings-refresh:hover {
+        background: #e8b92e;
+        transform: translateY(-2px);
+    }
+
+    .bookings-refresh:disabled {
+        opacity: 0.6;
+        cursor: wait;
+        transform: none;
+    }
+
+    /* Statistics */
+    .bookings-overview {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 1.2rem;
+        margin-bottom: 2rem;
+    }
+
+    .bookings-stat-card {
+        background: #ffffff;
+        border: 1px solid #e3eaf0;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 16px rgba(10, 37, 68, 0.04);
+    }
+
+    .bookings-stat-label {
+        display: block;
+        color: #64778a;
+        font-size: 0.9rem;
+        margin-bottom: 0.7rem;
+    }
+
+    .bookings-stat-value {
+        display: block;
+        color: #123c69;
+        font-size: 2rem;
+        font-weight: 800;
+    }
+
+    /* Bookings section */
+    .bookings-section {
+        background: #ffffff;
+        border: 1px solid #e3eaf0;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 5px 20px rgba(10, 37, 68, 0.05);
+    }
+
+    .bookings-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        flex-wrap: wrap;
+        padding: 1.5rem;
+        border-bottom: 1px solid #e8edf2;
+    }
+
+    .bookings-section-header h2 {
+        color: #123c69;
+        font-size: 1.25rem;
+        margin: 0 0 0.35rem;
+    }
+
+    .bookings-section-header p {
+        color: #718096;
+        font-size: 0.9rem;
+        margin: 0;
+    }
+
+    /* Search */
+    .bookings-search {
+        width: min(100%, 300px);
+        padding: 0.8rem 1rem;
+        border: 1px solid #d6e0e9;
+        border-radius: 8px;
+        font: inherit;
+        outline: none;
+        background: #ffffff;
+        color: #0a2544;
+    }
+
+    .bookings-search:focus {
+        border-color: #123c69;
+        box-shadow: 0 0 0 3px rgba(18, 60, 105, 0.1);
+    }
+
+    /* Table */
+    .bookings-table-wrapper {
+        width: 100%;
+        overflow-x: auto;
+    }
+
+    .bookings-table {
+        width: 100%;
+        min-width: 850px;
+        border-collapse: collapse;
+        text-align: left;
+    }
+
+    .bookings-table th {
+        background: #f3f6f9;
+        color: #52677b;
+        font-size: 0.78rem;
+        font-weight: 700;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        padding: 1rem 1.2rem;
+        white-space: nowrap;
+    }
+
+    .bookings-table td {
+        padding: 1.15rem 1.2rem;
+        border-bottom: 1px solid #edf1f5;
+        color: #40566b;
+        font-size: 0.9rem;
+    }
+
+    .bookings-table tbody tr:hover {
+        background: #faf9f4;
+    }
+
+    .bookings-table tbody tr:last-child td {
+        border-bottom: none;
+    }
+
+    .booking-reference {
+        color: #123c69;
+        font-weight: 800;
+    }
+
+    .booking-ticket {
+        display: inline-block;
+        background: #fff7dc;
+        color: #765600;
+        padding: 0.4rem 0.65rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    /* Loading, empty and error states */
+    .bookings-state {
+        padding: 3rem 1.5rem;
+        text-align: center;
+        color: #64778a;
+    }
+
+    .bookings-state h3 {
+        color: #123c69;
+        font-size: 1.1rem;
+        margin: 0 0 0.5rem;
+    }
+
+    .bookings-state p {
+        margin: 0;
+        line-height: 1.6;
+    }
+
+    .bookings-error {
+        color: #a12b2b;
+        background: #fff2f2;
+        border: 1px solid #f3cccc;
+        border-radius: 8px;
+        margin: 1.5rem;
+        padding: 1.2rem;
+        text-align: center;
+    }
+
+    .bookings-error h3 {
+        margin: 0 0 0.5rem;
+    }
+
+    .bookings-error button {
+        margin-top: 0.8rem;
+        padding: 0.6rem 1rem;
+        border: none;
+        border-radius: 6px;
+        background: #a12b2b;
+        color: #ffffff;
+        cursor: pointer;
+    }
+
+    .bookings-updated {
+        color: #718096;
+        font-size: 0.8rem;
+        padding: 1rem 1.5rem;
+        border-top: 1px solid #edf1f5;
+        margin: 0;
+    }
+
+    [hidden] {
+        display: none !important;
+    }
+
+    /* Mobile layout */
+    @media (max-width: 650px) {
+        .bookings-admin-page {
+            width: 94%;
+            padding-top: 1.5rem;
+        }
+
+        .bookings-hero {
+            padding: 1.6rem;
+        }
+
+        .bookings-hero-content {
+            align-items: flex-start;
+        }
+
+        .bookings-refresh {
+            width: 100%;
+        }
+
+        .bookings-overview {
+            grid-template-columns: 1fr;
+            gap: 0.8rem;
+        }
+
+        .bookings-stat-card {
+            padding: 1.2rem;
+        }
+
+        .bookings-section-header {
+            padding: 1.2rem;
+        }
+
+        .bookings-search {
+            width: 100%;
+        }
+    }
+</style>
+
+<main class="bookings-admin-page">
+
+    <!-- Dashboard heading -->
+    <section class="bookings-hero">
+        <div class="bookings-hero-content">
+            <div>
+                <span class="bookings-hero-label">
+                    Kizuna Rail Administration
+                </span>
+
+                <h1><%= title %></h1>
+
+                <p>
+                    Monitor reservations and passenger information
+                    across your railway journeys.
+                </p>
+            </div>
+
+            <button
+                type="button"
+                class="bookings-refresh"
+                id="bookings-refresh"
+            >
+                Refresh Bookings
+            </button>
+        </div>
+    </section>
+
+    <!-- Booking statistics -->
+    <section
+        class="bookings-overview"
+        aria-label="Booking statistics"
+    >
+        <article class="bookings-stat-card">
+            <span class="bookings-stat-label">
+                Total Bookings
+            </span>
+
+            <strong
+                class="bookings-stat-value"
+                id="bookings-count"
+            >
+                0
+            </strong>
+        </article>
+
+        <article class="bookings-stat-card">
+            <span class="bookings-stat-label">
+                Total Passengers
+            </span>
+
+            <strong
+                class="bookings-stat-value"
+                id="passengers-count"
+            >
+                0
+            </strong>
+        </article>
+    </section>
+
+    <!-- Bookings records -->
+    <section class="bookings-section">
+
+        <header class="bookings-section-header">
+            <div>
+                <h2>Booking Records</h2>
+
+                <p>
+                    Review reservations and their travel details.
+                </p>
+            </div>
+
+            <input
+                type="search"
+                id="bookings-search"
+                class="bookings-search"
+                placeholder="Search bookings..."
+                aria-label="Search bookings"
+            >
+        </header>
+
+        <!-- Loading state -->
+        <div
+            id="bookings-loading"
+            class="bookings-state"
+            role="status"
+        >
+            <h3>Loading bookings</h3>
+            <p>
+                Please wait while we retrieve the reservation records.
+            </p>
+        </div>
+
+        <!-- Error state -->
+        <div
+            id="bookings-error"
+            class="bookings-error"
+            role="alert"
+            hidden
+        >
+            <h3>Unable to load bookings</h3>
+
+            <p>
+                Something went wrong while retrieving the reservation records.
+            </p>
+
+            <button type="button" id="bookings-retry">
+                Try Again
+            </button>
+        </div>
+
+        <!-- Empty state -->
+        <div
+            id="bookings-empty"
+            class="bookings-state"
+            hidden
+        >
+            <h3>No bookings yet</h3>
+
+            <p>
+                New reservations will appear here when customers make bookings.
+            </p>
+        </div>
+
+        <!-- Search empty state -->
+        <div
+            id="bookings-no-results"
+            class="bookings-state"
+            hidden
+        >
+            <h3>No matching bookings</h3>
+
+            <p>
+                Try searching with a different booking reference or trip ID.
+            </p>
+        </div>
+
+        <!-- Dynamic bookings table -->
+        <div class="bookings-table-wrapper">
+            <table
+                class="bookings-table"
+                id="bookings-table"
+                hidden
+            >
+                <thead>
+                    <tr>
+                        <th>Booking Reference</th>
+                        <th>Trip</th>
+                        <th>Schedule</th>
+                        <th>Ticket Class</th>
+                        <th>Travel Day</th>
+                        <th>Passengers</th>
+                        <th>Booking Date</th>
+                    </tr>
+                </thead>
+
+                <tbody id="bookings-list"></tbody>
+            </table>
+        </div>
+
+        <p
+            class="bookings-updated"
+            id="bookings-updated"
+            hidden
+        ></p>
+
+    </section>
+</main>
+
+<!-- Booking row template -->
+<template id="booking-row-template">
+    <tr>
+        <td>
+            <span
+                class="booking-reference"
+                data-field="id"
+            ></span>
+        </td>
+
+        <td data-field="trip"></td>
+
+        <td data-field="schedule"></td>
+
+        <td>
+            <span
+                class="booking-ticket"
+                data-field="ticket-class"
+            ></span>
+        </td>
+
+        <td data-field="travel-day"></td>
+
+        <td data-field="passengers"></td>
+
+        <td data-field="created-at"></td>
+    </tr>
+</template>
+
+<script>
+    // Retrieves bookings from the API and updates the dashboard.
+    const loadBookings = async () => {
+        const loadingEl = document.getElementById('bookings-loading');
+        const errorEl = document.getElementById('bookings-error');
+        const emptyEl = document.getElementById('bookings-empty');
+        const noResultsEl = document.getElementById('bookings-no-results');
+        const tableEl = document.getElementById('bookings-table');
+        const listEl = document.getElementById('bookings-list');
+        const countEl = document.getElementById('bookings-count');
+        const passengersCountEl = document.getElementById('passengers-count');
+        const templateEl = document.getElementById('booking-row-template');
+        const refreshButton = document.getElementById('bookings-refresh');
+        const updatedEl = document.getElementById('bookings-updated');
+
+        loadingEl.hidden = false;
+        errorEl.hidden = true;
+        emptyEl.hidden = true;
+        noResultsEl.hidden = true;
+        tableEl.hidden = true;
+        updatedEl.hidden = true;
+
+        refreshButton.disabled = true;
+
+        try {
+            const response = await fetch('/api/bookings');
+
+            if (!response.ok) {
+                throw new Error(
+                    `Failed to load bookings (${response.status})`
+                );
+            }
+
+            const payload = await response.json();
+
+            const bookings = Array.isArray(payload.bookings)
+                ? payload.bookings
+                : [];
+
+            countEl.textContent = bookings.length;
+
+            // Calculate the total number of passengers.
+            const totalPassengers = bookings.reduce(
+                (total, booking) =>
+                    total + (booking.passengers?.length || 0),
+                0
+            );
+
+            passengersCountEl.textContent = totalPassengers;
+
+            listEl.replaceChildren();
+
+            if (bookings.length === 0) {
+                emptyEl.hidden = false;
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+
+            bookings.forEach((booking) => {
+                const row = templateEl.content.cloneNode(true);
+
+                row.querySelector('[data-field="id"]').textContent =
+                    booking.id || 'N/A';
+
+                row.querySelector('[data-field="trip"]').textContent =
+                    booking.tripId || 'N/A';
+
+                row.querySelector('[data-field="schedule"]').textContent =
+                    booking.scheduleId ?? 'N/A';
+
+                row.querySelector('[data-field="ticket-class"]').textContent =
+                    booking.ticketClass || 'N/A';
+
+                row.querySelector('[data-field="travel-day"]').textContent =
+                    booking.selectedDay || 'N/A';
+
+                row.querySelector('[data-field="passengers"]').textContent =
+                    booking.passengers?.length ?? 0;
+
+                const bookingDate = booking.createdAt
+                    ? new Date(booking.createdAt).toLocaleDateString()
+                    : 'N/A';
+
+                row.querySelector('[data-field="created-at"]').textContent =
+                    bookingDate;
+
+                // Store searchable information on the row.
+                const searchText = [
+                    booking.id,
+                    booking.tripId,
+                    booking.scheduleId,
+                    booking.ticketClass,
+                    booking.selectedDay
+                ].join(' ').toLowerCase();
+
+                row.querySelector('tr').dataset.search = searchText;
+
+                fragment.append(row);
+            });
+
+            listEl.append(fragment);
+            tableEl.hidden = false;
+
+            updatedEl.textContent =
+                `Last updated: ${new Date().toLocaleString()}`;
+
+            updatedEl.hidden = false;
+
+            filterBookings();
+
+        } catch (error) {
+            console.error('Unable to load bookings:', error);
+            errorEl.hidden = false;
+
+        } finally {
+            loadingEl.hidden = true;
+            refreshButton.disabled = false;
+        }
+    };
+
+    // Filters bookings using the search input.
+    const filterBookings = () => {
+        const searchInput = document.getElementById('bookings-search');
+        const rows = document.querySelectorAll('#bookings-list tr');
+        const noResultsEl = document.getElementById('bookings-no-results');
+        const tableEl = document.getElementById('bookings-table');
+
+        const searchTerm = searchInput.value.trim().toLowerCase();
+
+        let visibleRows = 0;
+
+        rows.forEach((row) => {
+            const matches = row.dataset.search.includes(searchTerm);
+
+            row.hidden = !matches;
+
+            if (matches) {
+                visibleRows++;
+            }
+        });
+
+        noResultsEl.hidden = visibleRows > 0;
+        tableEl.hidden = visibleRows === 0;
+    };
+
+    // Dashboard event listeners.
+    document.getElementById('bookings-refresh')
+        .addEventListener('click', loadBookings);
+
+    document.getElementById('bookings-retry')
+        .addEventListener('click', loadBookings);
+
+    document.getElementById('bookings-search')
+        .addEventListener('input', filterBookings);
+
+    // Load bookings when the page is ready.
+    loadBookings();
+</script>
+
+<%- include('partials/footer') %>
