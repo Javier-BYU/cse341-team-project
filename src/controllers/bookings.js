@@ -110,12 +110,23 @@ const processBookingRequest = async (req, res, next) => {
             return res.status(404).send('Trip not found.');
         }
 
+        // Confirm that the selected ticket class exists.
+        const db = getDb();
+        const validTicketClass = await db.collection('ticketClasses')
+            .findOne({ class: ticketClass });
+
+        if (!validTicketClass) {
+            return res.status(400).send(
+                'Invalid ticket class selected.'
+            );
+        }
+
         // Create the booking using verified database values.
         const booking = {
             id: generateBookingReference(),
             scheduleId: parsedScheduleId,
             tripId: schedule.tripId,
-            ticketClass,
+            ticketClass: validTicketClass.class,
             selectedDay,
             passengers
         };
@@ -154,7 +165,16 @@ const createBookingApi = async (req, res) => {
             });
         }
 
-        const schedule = await getScheduleById(scheduleId);
+        // Confirm that the submitted schedule exists.
+        const parsedScheduleId = Number(scheduleId);
+
+        if (!Number.isInteger(parsedScheduleId) || parsedScheduleId <= 0) {
+            return res.status(400).json({
+                error: 'Invalid schedule ID'
+            });
+        }
+
+        const schedule = await getScheduleById(parsedScheduleId);
 
         if (!schedule) {
             return res.status(404).json({
@@ -162,13 +182,15 @@ const createBookingApi = async (req, res) => {
             });
         }
 
+        // Confirm that the schedule belongs to the submitted trip.
         if (String(schedule.tripId) !== String(tripId)) {
             return res.status(400).json({
                 error: 'The selected schedule does not belong to this trip'
             });
         }
 
-        const trip = await getTripById(tripId);
+        // Confirm that the associated trip exists.
+        const trip = await getTripById(schedule.tripId);
 
         if (!trip) {
             return res.status(404).json({
@@ -176,11 +198,22 @@ const createBookingApi = async (req, res) => {
             });
         }
 
+        // Confirm that the selected ticket class exists.
+        const db = getDb();
+        const validTicketClass = await db.collection('ticketClasses')
+            .findOne({ class: ticketClass });
+
+        if (!validTicketClass) {
+            return res.status(400).json({
+                error: 'Invalid ticket class selected'
+            });
+        }
+
         const booking = {
             id: generateBookingReference(),
-            scheduleId: Number(scheduleId),
+            scheduleId: parsedScheduleId,
             tripId: schedule.tripId,
-            ticketClass,
+            ticketClass: validTicketClass.class,
             selectedDay,
             passengers
         };
