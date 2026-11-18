@@ -13,6 +13,48 @@ import {
 } from '../models/bookings.js';
 import { generateBookingReference } from '../includes/helpers.js';
 
+const MAX_PASSENGERS = 8;
+
+// Checks that every passenger has the required information.
+const validatePassengers = (passengers) => {
+    if (
+        !Array.isArray(passengers) ||
+        passengers.length === 0 ||
+        passengers.length > MAX_PASSENGERS
+    ) {
+        return false;
+    }
+
+    return passengers.every((passenger) => {
+        if (!passenger || typeof passenger !== 'object') {
+            return false;
+        }
+
+        const {
+            firstName,
+            lastName,
+            email,
+            phone
+        } = passenger;
+
+        if (
+            typeof firstName !== 'string' ||
+            !firstName.trim() ||
+            typeof lastName !== 'string' ||
+            !lastName.trim() ||
+            typeof email !== 'string' ||
+            typeof phone !== 'string' ||
+            !phone.trim()
+        ) {
+            return false;
+        }
+
+        const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        return emailPattern.test(email.trim());
+    });
+};
+
 // Displays the booking form for a selected train schedule.
 const bookingPage = async (req, res, next) => {
     try {
@@ -35,6 +77,7 @@ const bookingPage = async (req, res, next) => {
         }
 
         const db = getDb();
+
         const ticketClasses = await db.collection('ticketClasses')
             .find({})
             .toArray();
@@ -74,11 +117,10 @@ const processBookingRequest = async (req, res, next) => {
             !tripId ||
             !ticketClass ||
             !selectedDay ||
-            !Array.isArray(passengers) ||
-            passengers.length === 0
+            !validatePassengers(passengers)
         ) {
             return res.status(400).send(
-                'Missing or invalid booking information.'
+                'Missing or invalid booking information. A booking must contain between 1 and 8 passengers with valid details.'
             );
         }
 
@@ -103,6 +145,16 @@ const processBookingRequest = async (req, res, next) => {
             );
         }
 
+        // Confirm that the selected day is available for this schedule.
+        if (
+            !Array.isArray(schedule.daysOfWeek) ||
+            !schedule.daysOfWeek.includes(selectedDay)
+        ) {
+            return res.status(400).send(
+                'The selected day is not available for this schedule.'
+            );
+        }
+
         // Confirm that the associated trip exists.
         const trip = await getTripById(schedule.tripId);
 
@@ -112,6 +164,7 @@ const processBookingRequest = async (req, res, next) => {
 
         // Confirm that the selected ticket class exists.
         const db = getDb();
+
         const validTicketClass = await db.collection('ticketClasses')
             .findOne({ class: ticketClass });
 
@@ -128,7 +181,12 @@ const processBookingRequest = async (req, res, next) => {
             tripId: schedule.tripId,
             ticketClass: validTicketClass.class,
             selectedDay,
-            passengers
+            passengers: passengers.map((passenger) => ({
+                firstName: passenger.firstName.trim(),
+                lastName: passenger.lastName.trim(),
+                email: passenger.email.trim(),
+                phone: passenger.phone.trim()
+            }))
         };
 
         await createBooking(booking);
@@ -152,20 +210,20 @@ const createBookingApi = async (req, res) => {
             passengers
         } = req.body;
 
+        // Validate required booking information.
         if (
             scheduleId === undefined ||
             !tripId ||
             !ticketClass ||
             !selectedDay ||
-            !Array.isArray(passengers) ||
-            passengers.length === 0
+            !validatePassengers(passengers)
         ) {
             return res.status(400).json({
-                error: 'Missing or invalid booking information'
+                error: 'Missing or invalid booking information. A booking must contain between 1 and 8 passengers with valid details.'
             });
         }
 
-        // Confirm that the submitted schedule exists.
+        // Validate the schedule ID.
         const parsedScheduleId = Number(scheduleId);
 
         if (!Number.isInteger(parsedScheduleId) || parsedScheduleId <= 0) {
@@ -174,6 +232,7 @@ const createBookingApi = async (req, res) => {
             });
         }
 
+        // Confirm that the submitted schedule exists.
         const schedule = await getScheduleById(parsedScheduleId);
 
         if (!schedule) {
@@ -189,6 +248,16 @@ const createBookingApi = async (req, res) => {
             });
         }
 
+        // Confirm that the selected day is available for this schedule.
+        if (
+            !Array.isArray(schedule.daysOfWeek) ||
+            !schedule.daysOfWeek.includes(selectedDay)
+        ) {
+            return res.status(400).json({
+                error: 'The selected day is not available for this schedule'
+            });
+        }
+
         // Confirm that the associated trip exists.
         const trip = await getTripById(schedule.tripId);
 
@@ -200,6 +269,7 @@ const createBookingApi = async (req, res) => {
 
         // Confirm that the selected ticket class exists.
         const db = getDb();
+
         const validTicketClass = await db.collection('ticketClasses')
             .findOne({ class: ticketClass });
 
@@ -209,13 +279,19 @@ const createBookingApi = async (req, res) => {
             });
         }
 
+        // Create the booking using verified database values.
         const booking = {
             id: generateBookingReference(),
             scheduleId: parsedScheduleId,
             tripId: schedule.tripId,
             ticketClass: validTicketClass.class,
             selectedDay,
-            passengers
+            passengers: passengers.map((passenger) => ({
+                firstName: passenger.firstName.trim(),
+                lastName: passenger.lastName.trim(),
+                email: passenger.email.trim(),
+                phone: passenger.phone.trim()
+            }))
         };
 
         await createBooking(booking);
