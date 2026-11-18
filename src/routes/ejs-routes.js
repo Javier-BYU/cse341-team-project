@@ -10,8 +10,29 @@ import {
     renderTripDetails,
     renderTripList
 } from '../controllers/trips.js';
+import {
+    adminPage,
+    loginPage,
+    loginUser,
+    logoutUser,
+    registerPage,
+    registerUser
+} from '../controllers/auth.js';
+import { requirePageRole } from '../middleware/auth.js';
 
 const router = Router();
+
+// Authentication pages
+router.get('/register', registerPage);
+router.post('/register', registerUser);
+router.get('/login', loginPage);
+router.post('/login', loginUser);
+router.get('/logout', logoutUser);
+router.post('/logout', logoutUser);
+router.get('/admin', requirePageRole('admin'), adminPage);
+router.get('/403', (req, res) => res.status(403).render('errors/403', {
+    title: 'Forbidden'
+}));
 
 // Trips pages
 router.get('/trips', renderTripList);
