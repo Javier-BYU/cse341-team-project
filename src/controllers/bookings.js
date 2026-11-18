@@ -60,13 +60,64 @@ const bookingPage = async (req, res, next) => {
 // Processes the submitted booking form and saves the booking.
 const processBookingRequest = async (req, res, next) => {
     try {
+        const {
+            scheduleId,
+            tripId,
+            ticketClass,
+            selectedDay,
+            passengers
+        } = req.body;
+
+        // Validate required booking information.
+        if (
+            scheduleId === undefined ||
+            !tripId ||
+            !ticketClass ||
+            !selectedDay ||
+            !Array.isArray(passengers) ||
+            passengers.length === 0
+        ) {
+            return res.status(400).send(
+                'Missing or invalid booking information.'
+            );
+        }
+
+        // Validate the schedule ID.
+        const parsedScheduleId = Number(scheduleId);
+
+        if (!Number.isInteger(parsedScheduleId) || parsedScheduleId <= 0) {
+            return res.status(400).send('Invalid schedule ID.');
+        }
+
+        // Confirm that the submitted schedule exists.
+        const schedule = await getScheduleById(parsedScheduleId);
+
+        if (!schedule) {
+            return res.status(404).send('Schedule not found.');
+        }
+
+        // Confirm that the schedule belongs to the submitted trip.
+        if (String(schedule.tripId) !== String(tripId)) {
+            return res.status(400).send(
+                'The selected schedule does not belong to this trip.'
+            );
+        }
+
+        // Confirm that the associated trip exists.
+        const trip = await getTripById(schedule.tripId);
+
+        if (!trip) {
+            return res.status(404).send('Trip not found.');
+        }
+
+        // Create the booking using verified database values.
         const booking = {
             id: generateBookingReference(),
-            scheduleId: Number(req.body.scheduleId),
-            tripId: req.body.tripId,
-            ticketClass: req.body.ticketClass,
-            selectedDay: req.body.selectedDay,
-            passengers: req.body.passengers
+            scheduleId: parsedScheduleId,
+            tripId: schedule.tripId,
+            ticketClass,
+            selectedDay,
+            passengers
         };
 
         await createBooking(booking);
@@ -128,7 +179,7 @@ const createBookingApi = async (req, res) => {
         const booking = {
             id: generateBookingReference(),
             scheduleId: Number(scheduleId),
-            tripId,
+            tripId: schedule.tripId,
             ticketClass,
             selectedDay,
             passengers
