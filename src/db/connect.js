@@ -1,5 +1,6 @@
 import { MongoClient } from 'mongodb';
 import mongoose from 'mongoose';
+import { ensureStandardRoles } from '../models/roles.js';
 
 let database;
 let client;
@@ -20,6 +21,7 @@ const connectToDb = async (options = {}) => {
   await client.connect();
   try {
     await mongoose.connect(connectionString, { dbName: databaseName });
+    await ensureStandardRoles();
   } catch (error) {
     await client.close();
     client = undefined;
