@@ -1,9 +1,12 @@
 
 import Schedule from './schemas/schedules.js';
 
-// Retrieves schedules for a trip, optionally filtered by month.
+// Retrieves active schedules for a trip, optionally filtered by month.
 const getSchedulesByTripId = async (tripId, month) => {
-    const query = { tripId };
+    const query = {
+        tripId,
+        status: true
+    };
 
     if (month !== undefined) {
         query.months = month;

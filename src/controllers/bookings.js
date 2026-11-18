@@ -55,6 +55,9 @@ const validatePassengers = (passengers) => {
     });
 };
 
+// Checks whether a schedule is active and available for booking.
+const isScheduleActive = (schedule) => schedule?.status === true;
+
 // Displays the booking form for a selected train schedule.
 const bookingPage = async (req, res, next) => {
     try {
@@ -64,6 +67,13 @@ const bookingPage = async (req, res, next) => {
 
         if (!schedule) {
             const error = new Error('Schedule not found');
+            error.status = 404;
+            return next(error);
+        }
+
+        // Prevent customers from opening inactive schedules.
+        if (!isScheduleActive(schedule)) {
+            const error = new Error('Schedule is not available for booking');
             error.status = 404;
             return next(error);
         }
@@ -136,6 +146,13 @@ const processBookingRequest = async (req, res, next) => {
 
         if (!schedule) {
             return res.status(404).send('Schedule not found.');
+        }
+
+        // Prevent booking an inactive schedule.
+        if (!isScheduleActive(schedule)) {
+            return res.status(409).send(
+                'This schedule is no longer available for booking.'
+            );
         }
 
         // Confirm that the schedule belongs to the submitted trip.
@@ -238,6 +255,13 @@ const createBookingApi = async (req, res) => {
         if (!schedule) {
             return res.status(404).json({
                 error: 'Schedule not found'
+            });
+        }
+
+        // Prevent booking an inactive schedule.
+        if (!isScheduleActive(schedule)) {
+            return res.status(409).json({
+                error: 'This schedule is no longer available for booking'
             });
         }
 
