@@ -3,6 +3,7 @@
 	"dependencies": {
 		"ejs": "^6.0.1",
 		"express": "^5.1.0",
+		"express-session": "^1.19.0",
 		"mongodb": "^7.5.0",
 		"mongoose": "^9.12.1",
 		"swagger-jsdoc": "^6.3.0",
@@ -10,6 +11,7 @@
 	},
 	"scripts": {
 		"db:import": "node --env-file=.env src/db/import.js",
+		"db:create-admin": "node --env-file=.env src/db/create-admin.js",
 		"dev": "nodemon --env-file=.env server.js",
 		"reset": "node restore.js 3000 3001",
 		"start": "node --env-file=.env server.js",
