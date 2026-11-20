@@ -9,6 +9,7 @@ import {
 } from '../src/middleware/auth.js';
 import User from '../src/models/schemas/users.js';
 import { createUser } from '../src/models/users.js';
+import { createBooking } from '../src/models/bookings.js';
 
 const apiApp = express();
 apiApp.use(session({
@@ -59,7 +60,7 @@ describe('Authentication', () => {
             .send({ identifier: 'testuser', password: 'password123' });
 
         expect(loginResponse.status).toBe(302);
-        expect(loginResponse.headers.location).toBe('/admin');
+        expect(loginResponse.headers.location).toBe('/dashboard');
     });
 
     test('protects the admin page and redirects a regular user to 403', async () => {
@@ -91,11 +92,12 @@ describe('Authentication', () => {
         });
 
         const agent = request.agent(app);
-        await agent
+        const loginResponse = await agent
             .post('/login')
             .type('form')
             .send({ identifier: 'adminuser', password: 'password123' });
 
+        expect(loginResponse.headers.location).toBe('/admin');
         const response = await agent.get('/admin');
         expect(response.status).toBe(200);
         expect(response.text).toContain('Welcome to the Admin Dashboard');
@@ -106,6 +108,10 @@ describe('Authentication', () => {
         const pageResponse = await agent.get('/admin');
         expect(pageResponse.status).toBe(302);
         expect(pageResponse.headers.location).toBe('/login');
+
+        const dashboardResponse = await agent.get('/dashboard');
+        expect(dashboardResponse.status).toBe(302);
+        expect(dashboardResponse.headers.location).toBe('/login');
 
         await createUser({
             displayName: 'Logout User',
@@ -126,6 +132,102 @@ describe('Authentication', () => {
         expect(afterLogoutResponse.headers.location).toBe('/login');
     });
 
+    test("shows a standard user's dashboard and only their matching bookings", async () => {
+        await createUser({
+            displayName: 'Dashboard User',
+            username: 'dashboarduser',
+            email: 'dashboard@example.com',
+            password: 'password123'
+        });
+
+        await createBooking({
+            id: 'MATCHING-BOOKING',
+            scheduleId: 1,
+            tripId: 'alpine-panorama',
+            ticketClass: 'First Class',
+            selectedDay: 'Monday',
+            passengers: [
+                {
+                    firstName: 'Dashboard',
+                    lastName: 'User',
+                    email: 'DASHBOARD@example.com',
+                    phone: '1234567890'
+                },
+                {
+                    firstName: 'Other',
+                    lastName: 'Passenger',
+                    email: 'other@example.com',
+                    phone: '1234567890'
+                }
+            ]
+        });
+        await createBooking({
+            id: 'OTHER-BOOKING',
+            scheduleId: 2,
+            tripId: 'sakura-valley',
+            ticketClass: 'Standard Class',
+            selectedDay: 'Tuesday',
+            passengers: [
+                {
+                    firstName: 'Other',
+                    lastName: 'Passenger',
+                    email: 'other@example.com',
+                    phone: '1234567890'
+                }
+            ]
+        });
+
+        const agent = request.agent(app);
+        await agent
+            .post('/login')
+            .type('form')
+            .send({ identifier: 'dashboarduser', password: 'password123' });
+
+        const dashboardResponse = await agent.get('/dashboard');
+        expect(dashboardResponse.status).toBe(200);
+        expect(dashboardResponse.text).toContain('Welcome, Dashboard User.');
+        expect(dashboardResponse.text).toContain('href="/bookings-admin"');
+        expect(dashboardResponse.text).toContain('href="/users-admin"');
+        expect(dashboardResponse.text).toContain('href="/dashboard">Dashboard</a>');
+        expect(dashboardResponse.text).toContain('fetch(\'/api/bookings/mine\')');
+
+        const bookingsResponse = await agent.get('/api/bookings/mine');
+        expect(bookingsResponse.status).toBe(200);
+        expect(bookingsResponse.body.bookings).toHaveLength(1);
+        expect(bookingsResponse.body.bookings[0]).toMatchObject({
+            id: 'MATCHING-BOOKING',
+            passengerCount: 2
+        });
+        expect(bookingsResponse.body.bookings[0].passengers).toBeUndefined();
+    });
+
+    test('shows signed-out and admin navigation links appropriately', async () => {
+        const signedOutResponse = await request(app).get('/');
+        expect(signedOutResponse.text).toContain('href="/login">Log in</a>');
+        expect(signedOutResponse.text).toContain('href="/register">Register</a>');
+        expect(signedOutResponse.text).not.toContain('href="/dashboard">Dashboard</a>');
+        expect(signedOutResponse.text).not.toContain('href="/logout">Log out</a>');
+
+        await createUser({
+            displayName: 'Navigation Admin',
+            username: 'navigationadmin',
+            email: 'navigationadmin@example.com',
+            password: 'password123',
+            roleName: 'admin'
+        });
+        const agent = request.agent(app);
+        await agent
+            .post('/login')
+            .type('form')
+            .send({ identifier: 'navigationadmin', password: 'password123' });
+
+        const signedInResponse = await agent.get('/');
+        expect(signedInResponse.text).toContain('href="/admin">Dashboard</a>');
+        expect(signedInResponse.text).toContain('href="/logout">Log out</a>');
+        expect(signedInResponse.text).not.toContain('href="/login">Log in</a>');
+        expect(signedInResponse.text).not.toContain('href="/register">Register</a>');
+    });
+
     test('returns API authentication and authorization errors', async () => {
         const signedOutResponse = await request(apiApp).get('/protected');
         expect(signedOutResponse.status).toBe(401);
@@ -141,5 +243,8 @@ describe('Authentication', () => {
         const authorizedResponse = await agent.get('/admin');
         expect(authorizedResponse.status).toBe(200);
         expect(authorizedResponse.body).toEqual({ ok: true });
+
+        const signedOutBookingsResponse = await request(app).get('/api/bookings/mine');
+        expect(signedOutBookingsResponse.status).toBe(401);
     });
 });

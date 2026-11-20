@@ -12,8 +12,10 @@ import {
 } from '../controllers/schedules.js';
 import {
     getAllBookings,
-    createBookingApi
+    createBookingApi,
+    getMyBookings
 } from '../controllers/bookings.js';
+import { requireApiLogin } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -247,7 +249,22 @@ router.post('/schedules', createSchedule);
  *         description: Schedule or trip not found
  *       500:
  *         description: Failed to create booking
+ *
+ * /api/bookings/mine:
+ *   get:
+ *     tags:
+ *       - Bookings
+ *     summary: Get the signed-in user's bookings
+ *     description: Returns bookings that list the signed-in user's email as a passenger.
+ *     responses:
+ *       200:
+ *         description: The user's bookings
+ *       401:
+ *         description: Authentication required
+ *       500:
+ *         description: Failed to fetch user bookings
  */
+router.get('/bookings/mine', requireApiLogin, getMyBookings);
 router.get('/bookings', getAllBookings);
 router.post('/bookings', createBookingApi);
 
