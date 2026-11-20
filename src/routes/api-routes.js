@@ -14,6 +14,10 @@ import {
     getAllBookings,
     createBookingApi
 } from '../controllers/bookings.js';
+import {
+    getAllTicketClasses,
+    getTicketClassesForDay
+} from '../controllers/ticket-classes.js';
 
 const router = Router();
 
@@ -250,5 +254,67 @@ router.post('/schedules', createSchedule);
  */
 router.get('/bookings', getAllBookings);
 router.post('/bookings', createBookingApi);
+
+/**
+ * @swagger
+ * /api/ticket-classes:
+ *   get:
+ *     tags:
+ *       - Ticket Classes
+ *     summary: Get ticket classes
+ *     description: Returns all ticket classes, or filters them by weekday when the day query parameter is provided.
+ *     parameters:
+ *       - in: query
+ *         name: day
+ *         required: false
+ *         schema:
+ *           type: string
+ *           enum:
+ *             - monday
+ *             - tuesday
+ *             - wednesday
+ *             - thursday
+ *             - friday
+ *             - saturday
+ *             - sunday
+ *         description: Optional weekday used to filter available ticket classes.
+ *     responses:
+ *       200:
+ *         description: Ticket classes retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   class:
+ *                     type: string
+ *                   name:
+ *                     type: string
+ *                   pricePerKm:
+ *                     type: number
+ *                   availableDays:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   amenities:
+ *                     type: array
+ *                     items:
+ *                       type: string
+ *                   description:
+ *                     type: string
+ *       400:
+ *         description: Missing or invalid weekday
+ *       500:
+ *         description: Failed to fetch ticket classes
+ */
+router.get('/ticket-classes', (req, res) => {
+    if (req.query.day !== undefined) {
+        return getTicketClassesForDay(req, res);
+    }
+
+    return getAllTicketClasses(req, res);
+});
 
 export default router;
