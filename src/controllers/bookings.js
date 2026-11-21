@@ -9,6 +9,7 @@ import {
 import {
     createBooking,
     getAllBookings as findAllBookings,
+    getBookingsByPassengerEmail as findBookingsByPassengerEmail,
     getBookingById
 } from '../models/bookings.js';
 import { generateBookingReference } from '../includes/helpers.js';
@@ -193,6 +194,29 @@ const getAllBookings = async (req, res) => {
     }
 };
 
+// Returns bookings that include the signed-in user as a passenger.
+const getMyBookings = async (req, res) => {
+    try {
+        const bookings = await findBookingsByPassengerEmail(req.session.user.email);
+        const userBookings = bookings.map((booking) => ({
+            id: booking.id,
+            tripId: booking.tripId,
+            ticketClass: booking.ticketClass,
+            selectedDay: booking.selectedDay,
+            createdAt: booking.createdAt,
+            passengerCount: booking.passengers.length
+        }));
+
+        return res.status(200).json({ bookings: userBookings });
+    } catch (error) {
+        console.error('Error fetching user bookings:', error);
+
+        return res.status(500).json({
+            error: 'Failed to fetch user bookings'
+        });
+    }
+};
+
 // Displays the bookings administration page.
 const bookingsAdminPage = (req, res) => {
     return res.render('bookings', {
@@ -206,5 +230,6 @@ export {
     createBookingApi,
     confirmationPage,
     getAllBookings,
+    getMyBookings,
     bookingsAdminPage
 };
