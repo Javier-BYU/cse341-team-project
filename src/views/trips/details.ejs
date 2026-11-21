@@ -1,3 +1,4 @@
+
 <%- include('../partials/header') %>
 
 <article class="route-detail">
@@ -5,7 +6,7 @@
         <div class="route-header-content">
             <h1 class="route-name"><%= details.name %></h1>
             <p class="route-description"><%= details.description %></p>
-            
+
             <% if (details.highlights && details.highlights.length > 0) { %>
             <div class="highlights">
                 <% details.highlights.forEach(function(highlight) { %>
@@ -14,7 +15,7 @@
             </div>
             <% } %>
         </div>
-        
+
         <% if (details.imageUrl) { %>
         <div class="route-image">
             <img src="<%= details.imageUrl %>" alt="<%= details.name %>">
@@ -28,17 +29,17 @@
                 <span class="info-label">Region</span>
                 <span class="info-value region-<%= details.region %>"><%= details.region.charAt(0).toUpperCase() + details.region.slice(1) %></span>
             </div>
-            
+
             <div class="info-item">
                 <span class="info-label">Duration</span>
                 <span class="info-value"><%= details.duration %></span>
             </div>
-            
+
             <div class="info-item">
                 <span class="info-label">Distance</span>
                 <span class="info-value"><%= details.distance %> km</span>
             </div>
-            
+
             <div class="info-item">
                 <span class="info-label">Best Season</span>
                 <span class="info-value season-<%= details.bestSeason %>"><%= details.bestSeason.charAt(0).toUpperCase() + details.bestSeason.slice(1) %></span>
@@ -51,10 +52,29 @@
                 <div class="station">
                     <span class="station-label">Start</span>
                     <span class="station-name"><%= details.startStation.charAt(0).toUpperCase() + details.startStation.slice(1) %></span>
+                    <button
+                        type="button"
+                        class="station-details-toggle"
+                        data-station-id="<%= details.startStation %>"
+                        aria-expanded="false"
+                    >
+                        View station details
+                    </button>
+                    <div class="station-details" hidden aria-live="polite"></div>
                 </div>
+
                 <div class="station">
                     <span class="station-label">End</span>
                     <span class="station-name"><%= details.endStation.charAt(0).toUpperCase() + details.endStation.slice(1) %></span>
+                    <button
+                        type="button"
+                        class="station-details-toggle"
+                        data-station-id="<%= details.endStation %>"
+                        aria-expanded="false"
+                    >
+                        View station details
+                    </button>
+                    <div class="station-details" hidden aria-live="polite"></div>
                 </div>
             </div>
         </div>
@@ -83,95 +103,191 @@
     </div>
 </article>
 
+
 <script>
-    const monthSelector = document.getElementById('schedule-month');
-    const schedulesGrid = document.getElementById('schedules-grid');
-    const scheduleStatus = document.getElementById('schedule-status');
+    document.addEventListener('DOMContentLoaded', () => {
+        // STATION DETAILS
+        const stationButtons = document.querySelectorAll('.station-details-toggle');
 
-    function showScheduleMessage(message) {
-        scheduleStatus.textContent = message;
-        schedulesGrid.replaceChildren();
-    }
+        stationButtons.forEach((button) => {
+            button.addEventListener('click', async () => {
+                const stationId = button.dataset.stationId;
+                const detailsPanel = button.nextElementSibling;
 
-    function createScheduleCard(schedule) {
-        const card = document.createElement('div');
-        card.className = 'schedule-card';
+                if (!detailsPanel) return;
 
-        const times = document.createElement('div');
-        times.className = 'schedule-times';
-        for (const [label, time] of [
-            ['Departs', schedule.departureTime],
-            ['Arrives', schedule.arrivalTime]
-        ]) {
-            const block = document.createElement('div');
-            block.className = 'time-block';
-            const timeLabel = document.createElement('span');
-            timeLabel.className = 'time-label';
-            timeLabel.textContent = label;
-            const timeValue = document.createElement('span');
-            timeValue.className = 'time-value';
-            timeValue.textContent = time;
-            block.append(timeLabel, timeValue);
-            times.append(block);
-            if (label === 'Departs') {
-                const arrow = document.createElement('span');
-                arrow.className = 'time-arrow';
-                arrow.textContent = '→';
-                times.append(arrow);
+                if (!detailsPanel.hidden) {
+                    detailsPanel.hidden = true;
+                    button.setAttribute('aria-expanded', 'false');
+                    button.textContent = 'View station details';
+                    return;
+                }
+
+                detailsPanel.hidden = false;
+                button.setAttribute('aria-expanded', 'true');
+                button.textContent = 'Hide station details';
+
+                if (detailsPanel.dataset.loaded === 'true') return;
+
+                detailsPanel.textContent = 'Loading station details...';
+
+                try {
+                    const response = await fetch(
+                        `/api/stations/${encodeURIComponent(stationId)}`
+                    );
+
+                    if (!response.ok) {
+                        throw new Error('Failed to fetch station details');
+                    }
+
+                    const station = await response.json();
+
+                    detailsPanel.replaceChildren();
+
+                    const heading = document.createElement('h3');
+                    heading.textContent = station.name;
+
+                    const prefecture = document.createElement('p');
+                    prefecture.textContent = `Prefecture: ${station.prefecture}`;
+
+                    const region = document.createElement('p');
+                    region.textContent = `Region: ${station.region}`;
+
+                    const description = document.createElement('p');
+                    description.textContent = station.description;
+
+                    const facilitiesHeading = document.createElement('h4');
+                    facilitiesHeading.textContent = 'Available Facilities';
+
+                    const facilitiesList = document.createElement('ul');
+
+                    station.facilities.forEach((facility) => {
+                        const item = document.createElement('li');
+                        item.textContent = facility.replaceAll('_', ' ');
+                        facilitiesList.appendChild(item);
+                    });
+
+                    detailsPanel.append(
+                        heading,
+                        prefecture,
+                        region,
+                        description,
+                        facilitiesHeading,
+                        facilitiesList
+                    );
+
+                    detailsPanel.dataset.loaded = 'true';
+                } catch (error) {
+                    console.error('Error loading station details:', error);
+                    detailsPanel.textContent =
+                        'Unable to load station details. Please try again.';
+                }
+            });
+        });
+
+        // TRIP SCHEDULES
+        const monthSelector = document.getElementById('schedule-month');
+        const schedulesGrid = document.getElementById('schedules-grid');
+        const scheduleStatus = document.getElementById('schedule-status');
+
+        function showScheduleMessage(message) {
+            scheduleStatus.textContent = message;
+            schedulesGrid.replaceChildren();
+        }
+
+        function createScheduleCard(schedule) {
+            const card = document.createElement('div');
+            card.className = 'schedule-card';
+
+            const times = document.createElement('div');
+            times.className = 'schedule-times';
+
+            for (const [label, time] of [
+                ['Departs', schedule.departureTime],
+                ['Arrives', schedule.arrivalTime]
+            ]) {
+                const block = document.createElement('div');
+                block.className = 'time-block';
+
+                const timeLabel = document.createElement('span');
+                timeLabel.className = 'time-label';
+                timeLabel.textContent = label;
+
+                const timeValue = document.createElement('span');
+                timeValue.className = 'time-value';
+                timeValue.textContent = time;
+
+                block.append(timeLabel, timeValue);
+                times.append(block);
+
+                if (label === 'Departs') {
+                    const arrow = document.createElement('span');
+                    arrow.className = 'time-arrow';
+                    arrow.textContent = '→';
+                    times.append(arrow);
+                }
+            }
+
+            card.append(times);
+
+            const days = document.createElement('div');
+            days.className = 'schedule-days';
+
+            for (const day of schedule.daysOfWeek) {
+                const badge = document.createElement('span');
+                badge.className = 'day-badge';
+                badge.textContent = day.substring(0, 3);
+                days.append(badge);
+            }
+
+            card.append(days);
+
+            const bookingLink = document.createElement('a');
+            bookingLink.className = 'book-btn';
+            bookingLink.href = `/trips/booking/${encodeURIComponent(schedule.id)}`;
+            bookingLink.textContent = 'Book Now';
+
+            card.append(bookingLink);
+
+            return card;
+        }
+
+        async function loadSchedules() {
+            const month = monthSelector.value;
+            const tripId = schedulesGrid.dataset.tripId;
+            const monthQuery = month ? `?month=${encodeURIComponent(month)}` : '';
+
+            scheduleStatus.textContent = 'Loading schedules...';
+
+            try {
+                const response = await fetch(
+                    `/api/trips/${encodeURIComponent(tripId)}/schedules${monthQuery}`
+                );
+
+                const schedules = await response.json();
+
+                if (response.status === 404) {
+                    showScheduleMessage('No schedules available for this month.');
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error(schedules.error || 'Unable to load schedules.');
+                }
+
+                schedulesGrid.replaceChildren(...schedules.map(createScheduleCard));
+
+                scheduleStatus.textContent = schedules.length
+                    ? ''
+                    : 'No schedules available for this month.';
+            } catch (error) {
+                showScheduleMessage(error.message);
             }
         }
-        card.append(times);
 
-        const days = document.createElement('div');
-        days.className = 'schedule-days';
-        for (const day of schedule.daysOfWeek) {
-            const badge = document.createElement('span');
-            badge.className = 'day-badge';
-            badge.textContent = day.substring(0, 3);
-            days.append(badge);
-        }
-        card.append(days);
-
-        const bookingLink = document.createElement('a');
-        bookingLink.className = 'book-btn';
-        bookingLink.href = `/trips/booking/${encodeURIComponent(schedule.id)}`;
-        bookingLink.textContent = 'Book Now';
-        card.append(bookingLink);
-
-        return card;
-    }
-
-    async function loadSchedules() {
-        const month = monthSelector.value;
-        const tripId = schedulesGrid.dataset.tripId;
-        const monthQuery = month ? `?month=${encodeURIComponent(month)}` : '';
-        scheduleStatus.textContent = 'Loading schedules...';
-
-        try {
-            const response = await fetch(
-                `/api/trips/${encodeURIComponent(tripId)}/schedules${monthQuery}`
-            );
-            const schedules = await response.json();
-
-            if (response.status === 404) {
-                showScheduleMessage('No schedules available for this month.');
-                return;
-            }
-            if (!response.ok) {
-                throw new Error(schedules.error || 'Unable to load schedules.');
-            }
-
-            schedulesGrid.replaceChildren(...schedules.map(createScheduleCard));
-            scheduleStatus.textContent = schedules.length
-                ? ''
-                : 'No schedules available for this month.';
-        } catch (error) {
-            showScheduleMessage(error.message);
-        }
-    }
-
-    monthSelector.addEventListener('change', loadSchedules);
-    loadSchedules();
+        monthSelector.addEventListener('change', loadSchedules);
+        loadSchedules();
+    });
 </script>
 
 <%- include('../partials/footer') %>
