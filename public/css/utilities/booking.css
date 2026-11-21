@@ -42,6 +42,12 @@ article.booking-page {
                 flex-direction: column;
                 gap: var(--space-md);
 
+                .ticket-availability-status {
+                        margin-top: var(--space-sm);
+                        font-size: var(--font-size-sm);
+                        color: var(--clr-text-secondary);
+                    }
+
                 .ticket-card {
                     position: relative;
                     display: block;
@@ -55,6 +61,22 @@ article.booking-page {
                     &:hover {
                         border-color: var(--clr-primary-light);
                         box-shadow: var(--shadow-md);
+                    }
+
+                    &.unavailable {
+                        opacity: 0.45;
+                        cursor: not-allowed;
+                        background-color: var(--clr-surface-alt);
+                        border-color: var(--clr-border);
+
+                        &:hover {
+                            border-color: var(--clr-border);
+                            box-shadow: none;
+                        }
+
+                        .ticket-content {
+                            cursor: not-allowed;
+                        }
                     }
 
                     input[type="radio"] {
