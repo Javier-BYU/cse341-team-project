@@ -1,15 +1,23 @@
 
 import { Router } from 'express';
+
 import {
     getAllTrips,
     getTripById,
     createTrip
 } from '../controllers/trips.js';
+
+import {
+    getAllStations,
+    getStationById
+} from '../controllers/stations.js';
+
 import {
     getSchedulesForTrip,
     getSchedulesForTripAndMonth,
     createSchedule
 } from '../controllers/schedules.js';
+
 import {
     getAllBookings,
     createBookingApi
@@ -250,5 +258,100 @@ router.post('/schedules', createSchedule);
  */
 router.get('/bookings', getAllBookings);
 router.post('/bookings', createBookingApi);
+
+/**
+ * @swagger
+ * /api/stations:
+ *   get:
+ *     tags:
+ *       - Stations
+ *     summary: Get all stations
+ *     description: Returns every train station.
+ *     responses:
+ *       200:
+ *         description: A list of stations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 stations:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       prefecture:
+ *                         type: string
+ *                       region:
+ *                         type: string
+ *                       facilities:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                       description:
+ *                         type: string
+ *       500:
+ *         description: Failed to fetch stations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/stations', getAllStations);
+
+/**
+ * @swagger
+ * /api/stations/{id}:
+ *   get:
+ *     tags:
+ *       - Stations
+ *     summary: Get a station by ID
+ *     description: Returns one station by its identifier.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: The requested station
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 prefecture:
+ *                   type: string
+ *                 region:
+ *                   type: string
+ *                 facilities:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 description:
+ *                   type: string
+ *       404:
+ *         description: Station not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to fetch station
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/stations/:id', getStationById);
 
 export default router;
