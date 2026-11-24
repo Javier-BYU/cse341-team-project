@@ -1,0 +1,78 @@
+
+/* User management page */
+#users-list {
+    display: grid;
+    gap: 1rem;
+    padding: 0;
+    list-style: none;
+}
+
+#users-list li {
+    padding: 1rem;
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 0.5rem;
+    background-color: var(--surface-color, #fff);
+}
+
+#users-list h3 {
+    margin-bottom: 0.5rem;
+}
+
+#users-list p {
+    overflow-wrap: anywhere;
+    margin-bottom: 0.75rem;
+}
+
+#users-list button {
+    margin-right: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+#user-edit-section {
+    margin-top: 2rem;
+    padding: 1.5rem;
+    border: 1px solid var(--border-color, #ccc);
+    border-radius: 0.5rem;
+}
+
+#user-edit-form {
+    display: grid;
+    gap: 1rem;
+    max-width: 35rem;
+}
+
+#user-edit-form div {
+    display: grid;
+    gap: 0.4rem;
+}
+
+#user-edit-form input {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    padding: 0.65rem;
+}
+
+#user-edit-form button {
+    justify-self: start;
+}
+
+#user-edit-form button,
+#users-list button {
+    max-width: 100%;
+}
+
+#users-status {
+    margin-block: 1rem;
+    overflow-wrap: anywhere;
+}
+
+#users-error {
+    color: #b42318;
+}
+
+@media (min-width: 48rem) {
+    #users-list li {
+        padding: 1.5rem;
+    }
+}
