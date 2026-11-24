@@ -14,6 +14,16 @@ const createBooking = async (booking) => Booking.create(booking);
  */
 const getAllBookings = async () => Booking.find({}).lean();
 
+const getBookingsByPassengerEmail = async (email) => {
+    const escapedEmail = email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return Booking.find({
+        'passengers.email': {
+            $regex: `^${escapedEmail}$`,
+            $options: 'i'
+        }
+    }).lean();
+};
+
 /**
  * Retrieves a booking using its unique booking reference.
  * @param {string} id - The booking reference.
@@ -21,4 +31,9 @@ const getAllBookings = async () => Booking.find({}).lean();
  */
 const getBookingById = async (id) => Booking.findOne({ id }).lean();
 
-export { createBooking, getAllBookings, getBookingById };
+export {
+    createBooking,
+    getAllBookings,
+    getBookingsByPassengerEmail,
+    getBookingById
+};

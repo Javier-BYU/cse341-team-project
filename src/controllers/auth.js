@@ -59,7 +59,7 @@ const loginUser = async (req, res) => {
         role: user.role.name
     };
 
-    return res.redirect('/admin');
+    return res.redirect(user.role.name === 'admin' ? '/admin' : '/dashboard');
 };
 
 const logoutUser = (req, res, next) => {

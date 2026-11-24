@@ -1,23 +1,33 @@
 
 import { Router } from 'express';
+
 import {
     getAllTrips,
     getTripById,
     createTrip
 } from '../controllers/trips.js';
+
+import {
+    getAllStations,
+    getStationById
+} from '../controllers/stations.js';
+
 import {
     getSchedulesForTrip,
     getSchedulesForTripAndMonth,
     createSchedule
 } from '../controllers/schedules.js';
+
 import {
     getAllBookings,
-    createBookingApi
+    createBookingApi,
+    getMyBookings
 } from '../controllers/bookings.js';
 import {
     getAllTicketClasses,
     getTicketClassesForDay
 } from '../controllers/ticket-classes.js';
+import { requireApiLogin } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -251,70 +261,118 @@ router.post('/schedules', createSchedule);
  *         description: Schedule or trip not found
  *       500:
  *         description: Failed to create booking
+ *
+ * /api/bookings/mine:
+ *   get:
+ *     tags:
+ *       - Bookings
+ *     summary: Get the signed-in user's bookings
+ *     description: Returns bookings that list the signed-in user's email as a passenger.
+ *     responses:
+ *       200:
+ *         description: The user's bookings
+ *       401:
+ *         description: Authentication required
+ *       500:
+ *         description: Failed to fetch user bookings
  */
+router.get('/bookings/mine', requireApiLogin, getMyBookings);
 router.get('/bookings', getAllBookings);
 router.post('/bookings', createBookingApi);
 
 /**
  * @swagger
- * /api/ticket-classes:
+ * /api/stations:
  *   get:
  *     tags:
- *       - Ticket Classes
- *     summary: Get ticket classes
- *     description: Returns all ticket classes, or filters them by weekday when the day query parameter is provided.
- *     parameters:
- *       - in: query
- *         name: day
- *         required: false
- *         schema:
- *           type: string
- *           enum:
- *             - monday
- *             - tuesday
- *             - wednesday
- *             - thursday
- *             - friday
- *             - saturday
- *             - sunday
- *         description: Optional weekday used to filter available ticket classes.
+ *       - Stations
+ *     summary: Get all stations
+ *     description: Returns every train station.
  *     responses:
  *       200:
- *         description: Ticket classes retrieved successfully
+ *         description: A list of stations
  *         content:
  *           application/json:
  *             schema:
- *               type: array
- *               items:
- *                 type: object
- *                 properties:
- *                   class:
- *                     type: string
- *                   name:
- *                     type: string
- *                   pricePerKm:
- *                     type: number
- *                   availableDays:
- *                     type: array
- *                     items:
- *                       type: string
- *                   amenities:
- *                     type: array
- *                     items:
- *                       type: string
- *                   description:
- *                     type: string
- *       400:
- *         description: Missing or invalid weekday
+ *               type: object
+ *               properties:
+ *                 stations:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id:
+ *                         type: string
+ *                       name:
+ *                         type: string
+ *                       prefecture:
+ *                         type: string
+ *                       region:
+ *                         type: string
+ *                       facilities:
+ *                         type: array
+ *                         items:
+ *                           type: string
+ *                       description:
+ *                         type: string
  *       500:
- *         description: Failed to fetch ticket classes
+ *         description: Failed to fetch stations
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  */
-router.get('/ticket-classes', (req, res) => {
-    if (req.query.day !== undefined) {
-        return getTicketClassesForDay(req, res);
-    }
+router.get('/stations', getAllStations);
 
-    return getAllTicketClasses(req, res);
-});
+/**
+ * @swagger
+ * /api/stations/{id}:
+ *   get:
+ *     tags:
+ *       - Stations
+ *     summary: Get a station by ID
+ *     description: Returns one station by its identifier.
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: The requested station
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 id:
+ *                   type: string
+ *                 name:
+ *                   type: string
+ *                 prefecture:
+ *                   type: string
+ *                 region:
+ *                   type: string
+ *                 facilities:
+ *                   type: array
+ *                   items:
+ *                     type: string
+ *                 description:
+ *                   type: string
+ *       404:
+ *         description: Station not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         description: Failed to fetch station
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/stations/:id', getStationById);
 
 export default router;

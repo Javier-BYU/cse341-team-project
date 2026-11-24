@@ -1,0 +1,67 @@
+<%- include('./partials/header') %>
+<main class="content">
+    <h1>Welcome, <%= sessionUser.displayName %>.</h1>
+
+    <section aria-labelledby="bookings-heading">
+        <h2 id="bookings-heading">Your Bookings</h2>
+        <p id="bookings-loading" role="status">Loading your bookings...</p>
+        <p id="bookings-error" role="alert" hidden>
+            Your bookings could not be loaded. Please try again later.
+        </p>
+        <p id="bookings-empty" hidden>You do not have any bookings yet.</p>
+        <ul id="user-bookings"></ul>
+    </section>
+
+    <nav aria-label="Administration">
+        <ul>
+            <li><a href="/bookings-admin">Booking Admin</a></li>
+            <li><a href="/users-admin">User Admin</a></li>
+        </ul>
+    </nav>
+</main>
+<script>
+    const bookingsLoading = document.getElementById('bookings-loading');
+    const bookingsError = document.getElementById('bookings-error');
+    const bookingsEmpty = document.getElementById('bookings-empty');
+    const bookingsList = document.getElementById('user-bookings');
+
+    const addBooking = (booking) => {
+        const item = document.createElement('li');
+        const heading = document.createElement('h3');
+        const details = document.createElement('p');
+        const confirmationLink = document.createElement('a');
+
+        heading.textContent = booking.tripId;
+        details.textContent = `${booking.ticketClass} - ${booking.selectedDay} - ${booking.passengerCount} passenger(s)`;
+        confirmationLink.href = `/trips/confirmation/${encodeURIComponent(booking.id)}`;
+        confirmationLink.textContent = `Booking ${booking.id}`;
+
+        item.append(heading, details, confirmationLink);
+        bookingsList.append(item);
+    };
+
+    const loadBookings = async () => {
+        try {
+            const response = await fetch('/api/bookings/mine');
+            if (!response.ok) {
+                throw new Error(`Request failed with status ${response.status}`);
+            }
+
+            const data = await response.json();
+            if (!Array.isArray(data.bookings)) {
+                throw new Error('The bookings response is invalid.');
+            }
+
+            bookingsLoading.hidden = true;
+            bookingsEmpty.hidden = data.bookings.length > 0;
+            data.bookings.forEach(addBooking);
+        } catch (error) {
+            console.error('Unable to load user bookings:', error);
+            bookingsLoading.hidden = true;
+            bookingsError.hidden = false;
+        }
+    };
+
+    loadBookings();
+</script>
+<%- include('./partials/footer') %>

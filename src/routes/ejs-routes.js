@@ -18,7 +18,8 @@ import {
     registerPage,
     registerUser
 } from '../controllers/auth.js';
-import { requirePageRole } from '../middleware/auth.js';
+import { userDashboardPage } from '../controllers/dashboard.js';
+import { requirePageLogin, requirePageRole } from '../middleware/auth.js';
 
 const router = Router();
 
@@ -30,6 +31,7 @@ router.post('/login', loginUser);
 router.get('/logout', logoutUser);
 router.post('/logout', logoutUser);
 router.get('/admin', requirePageRole('admin'), adminPage);
+router.get('/dashboard', requirePageLogin, userDashboardPage);
 router.get('/403', (req, res) => res.status(403).render('errors/403', {
     title: 'Forbidden'
 }));
