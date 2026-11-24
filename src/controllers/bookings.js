@@ -81,6 +81,13 @@ const bookingPage = async (req, res, next) => {
             return next(error);
         }
 
+        // Prevent customers from opening inactive schedules.
+        if (!isScheduleActive(schedule)) {
+            const error = new Error('Schedule is not available for booking');
+            error.status = 404;
+            return next(error);
+        }
+
         const trip = await getTripById(schedule.tripId);
 
         if (!trip) {
@@ -193,15 +200,24 @@ const createBookingApi = async (req, res) => {
             !tripId ||
             !ticketClass ||
             !selectedDay ||
-            !Array.isArray(passengers) ||
-            passengers.length === 0
+            !validatePassengers(passengers)
         ) {
             return res.status(400).json({
-                error: 'Missing or invalid booking information'
+                error: 'Missing or invalid booking information. A booking must contain between 1 and 8 passengers with valid details.'
             });
         }
 
-        const schedule = await getScheduleById(scheduleId);
+        // Validate the schedule ID.
+        const parsedScheduleId = Number(scheduleId);
+
+        if (!Number.isInteger(parsedScheduleId) || parsedScheduleId <= 0) {
+            return res.status(400).json({
+                error: 'Invalid schedule ID'
+            });
+        }
+
+        // Confirm that the submitted schedule exists.
+        const schedule = await getScheduleById(parsedScheduleId);
 
         if (!schedule) {
             return res.status(404).json({
@@ -209,13 +225,32 @@ const createBookingApi = async (req, res) => {
             });
         }
 
+        // Prevent booking an inactive schedule.
+        if (!isScheduleActive(schedule)) {
+            return res.status(409).json({
+                error: 'This schedule is no longer available for booking'
+            });
+        }
+
+        // Confirm that the schedule belongs to the submitted trip.
         if (String(schedule.tripId) !== String(tripId)) {
             return res.status(400).json({
                 error: 'The selected schedule does not belong to this trip'
             });
         }
 
-        const trip = await getTripById(tripId);
+        // Confirm that the selected day is available for this schedule.
+        if (
+            !Array.isArray(schedule.daysOfWeek) ||
+            !schedule.daysOfWeek.includes(selectedDay)
+        ) {
+            return res.status(400).json({
+                error: 'The selected day is not available for this schedule'
+            });
+        }
+
+        // Confirm that the associated trip exists.
+        const trip = await getTripById(schedule.tripId);
 
         if (!trip) {
             return res.status(404).json({
@@ -223,6 +258,19 @@ const createBookingApi = async (req, res) => {
             });
         }
 
+        // Confirm that the selected ticket class exists.
+        const db = getDb();
+
+        const validTicketClass = await db.collection('ticketClasses')
+            .findOne({ class: ticketClass });
+
+        if (!validTicketClass) {
+            return res.status(400).json({
+                error: 'Invalid ticket class selected'
+            });
+        }
+
+        // Create the booking using verified database values.
         const booking = {
             id: generateBookingReference(),
             scheduleId: Number(scheduleId),

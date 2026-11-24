@@ -5,14 +5,47 @@ import {
     createTrip as saveTrip
 } from '../models/trips.js';
 
+import {
+    getSchedulesByTripId
+} from '../models/schedules.js';
+
 const getAllTrips = async (req, res) => {
     try {
         const trips = await findAllTrips();
+
         return res.status(200).json({ trips });
     } catch (error) {
         console.error('Error fetching trips:', error);
+
         return res.status(500).json({
             error: 'Failed to fetch trips'
+        });
+    }
+};
+
+// Retrieves only trips that have at least one active schedule.
+const getAvailableTrips = async (req, res) => {
+    try {
+        const trips = await findAllTrips();
+
+        const availabilityChecks = await Promise.all(
+            trips.map(async (trip) => {
+                const schedules = await getSchedulesByTripId(trip.id);
+
+                return schedules.length > 0 ? trip : null;
+            })
+        );
+
+        const availableTrips = availabilityChecks.filter(Boolean);
+
+        return res.status(200).json({
+            trips: availableTrips
+        });
+    } catch (error) {
+        console.error('Error fetching available trips:', error);
+
+        return res.status(500).json({
+            error: 'Failed to fetch available trips'
         });
     }
 };
@@ -30,6 +63,7 @@ const getTripById = async (req, res) => {
         return res.status(200).json(trip);
     } catch (error) {
         console.error('Error fetching trip:', error);
+
         return res.status(500).json({
             error: 'Failed to fetch trip'
         });
@@ -80,6 +114,7 @@ const renderTripDetails = async (req, res, next) => {
         if (!details) {
             const error = new Error('Trip not found');
             error.status = 404;
+
             return next(error);
         }
 
@@ -94,6 +129,7 @@ const renderTripDetails = async (req, res, next) => {
 
 export {
     getAllTrips,
+    getAvailableTrips,
     getTripById,
     createTrip,
     renderTripDetails,

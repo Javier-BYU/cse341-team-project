@@ -4,7 +4,8 @@ import { Router } from 'express';
 import {
     getAllTrips,
     getTripById,
-    createTrip
+    createTrip,
+    getAvailableTrips
 } from '../controllers/trips.js';
 
 import {
@@ -96,6 +97,35 @@ const router = Router();
  */
 router.get('/trips', getAllTrips);
 router.post('/trips', createTrip);
+
+/**
+ * @swagger
+ * /api/trips/available:
+ *   get:
+ *     tags:
+ *       - Trips
+ *     summary: Get trips available for booking
+ *     description: Returns scenic trips that have at least one active schedule.
+ *     responses:
+ *       200:
+ *         description: A list of trips with active schedules
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 trips:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Trip'
+ *       500:
+ *         description: Failed to fetch available trips
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/trips/available', getAvailableTrips);
 
 /**
  * @swagger
