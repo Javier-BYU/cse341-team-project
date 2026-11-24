@@ -23,6 +23,10 @@ import {
     createBookingApi,
     getMyBookings
 } from '../controllers/bookings.js';
+import {
+    getAllTicketClasses,
+    getTicketClassesForDay
+} from '../controllers/ticket-classes.js';
 import { requireApiLogin } from '../middleware/auth.js';
 
 const router = Router();

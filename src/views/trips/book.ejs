@@ -7,6 +7,10 @@
         </div>
     </div>
 
+    <% if (typeof validationMessage !== 'undefined' && validationMessage) { %>
+        <p class="ticket-availability-status" role="alert"><%= validationMessage %></p>
+    <% } %>
+
     <form class="booking-form" method="POST" action="/trips/book">
         <input type="hidden" name="scheduleId" value="<%= schedule.id %>">
         <input type="hidden" name="tripId" value="<%= schedule.tripId %>">
@@ -17,7 +21,7 @@
             <div class="ticket-options">
                 <% if (ticketOptions) { %>
                     <% ticketOptions.forEach((ticket, index) => { %>
-                        <label class="ticket-card" for="ticket-<%= ticket.class %>">
+                        <label class="ticket-card" for="ticket-<%= ticket.class %>" data-ticket-class="<%= ticket.class %>">
                             <input 
                                 type="radio" 
                                 name="ticketClass" 
@@ -25,7 +29,7 @@
                                 value="<%= ticket.class %>"
                                 data-name="<%= ticket.name %>"
                                 data-price="<%= ticket.price %>"
-                                <%= index === 1 ? 'checked' : '' %>
+                                <%= (typeof submittedTicketClass !== 'undefined' && submittedTicketClass ? submittedTicketClass : (index === 1 ? ticket.class : '')).trim().toLowerCase() === ticket.class.trim().toLowerCase() ? 'checked' : '' %>
                                 required
                             >
                             <div class="ticket-content">
@@ -54,6 +58,7 @@
                     <% }) %>
                 <% } %>
             </div>
+            <p id="ticketAvailabilityStatus" class="ticket-availability-status" role="status" aria-live="polite"></p>
         </section>
 
         <section class="day-selection">
@@ -74,7 +79,7 @@
                                     name="selectedDay"
                                     id="day-<%= index %>"
                                     value="<%= day %>"
-                                    <%= index === 0 ? 'checked' : '' %>
+                                    <%= (typeof submittedDay !== 'undefined' && submittedDay ? submittedDay : (index === 0 ? day : '')).trim().toLowerCase() === day.trim().toLowerCase() ? 'checked' : '' %>
                                     required
                                 >
                                 <span class="day-text"><%= day %></span>
@@ -195,6 +200,7 @@
     const passengersList = document.getElementById('passengersList');
     const addPassengerBtn = document.getElementById('addPassenger');
     const ticketRadios = document.querySelectorAll('input[name="ticketClass"]');
+    const submitButton = document.querySelector('.booking-form button[type="submit"]');
     
     // Update summary displays
     const selectedTicketName = document.getElementById('selectedTicketName');
@@ -386,22 +392,82 @@
         console.log(`✓ Filled ${cards.length} passenger form(s)`);
     };
 
-    // Event Listeners
-    selectedDayLabels.forEach((label) => {
-        label.addEventListener('click', (e) => {
-            e.preventDefault();
-            const label = e.currentTarget;
+    // Check ticket-class availability for the selected weekday.
+    let availabilityRequestId = 0;
+    let availabilityConfirmed = false;
+    let preserveSubmittedTicketSelection = typeof submittedTicketClass !== 'undefined' && Boolean(submittedTicketClass);
 
-            // Update visual and input selection
-            selectedDayLabels.forEach((lbl) => {
-                lbl.classList.remove('selected');
-                lbl.querySelector('input').checked = false;
-                lbl.querySelector('input').removeAttribute('checked');
+    const fetchTicketClassesForDay = async (day) => {
+        const requestId = ++availabilityRequestId;
+        const statusMessage = document.getElementById('ticketAvailabilityStatus');
+        availabilityConfirmed = false;
+        statusMessage.textContent = 'Checking ticket availability...';
+        submitButton.disabled = true;
+
+        try {
+            const response = await fetch(`/api/ticket-classes?day=${encodeURIComponent(day)}`);
+            if (!response.ok) {
+                throw new Error(`Ticket availability request failed: ${response.status}`);
+            }
+
+            const availableClasses = await response.json();
+            if (requestId !== availabilityRequestId) return;
+            availabilityConfirmed = true;
+
+            const availableClassIds = new Set(availableClasses.map((ticket) => ticket.class));
+            const submittedRadio = document.querySelector('input[name="ticketClass"]:checked');
+            const keepSubmittedSelection = preserveSubmittedTicketSelection && submittedRadio &&
+                !availableClassIds.has(submittedRadio.value);
+            preserveSubmittedTicketSelection = false;
+            ticketRadios.forEach((radio) => {
+                const unavailable = !availableClassIds.has(radio.value);
+                radio.disabled = unavailable;
+                radio.closest('.ticket-card').classList.toggle('unavailable', unavailable);
+                radio.closest('.ticket-card').setAttribute('aria-disabled', String(unavailable));
+                if (unavailable && radio.checked && !keepSubmittedSelection) radio.checked = false;
             });
 
-            label.classList.add('selected');
-            label.querySelector('input').checked = true;
-            label.querySelector('input').setAttribute('checked', true);
+            let selectedRadio = document.querySelector('input[name="ticketClass"]:checked:not(:disabled)');
+            if (!selectedRadio && !keepSubmittedSelection) {
+                selectedRadio = Array.from(ticketRadios).find((radio) => !radio.disabled);
+                if (selectedRadio) selectedRadio.checked = true;
+            }
+
+            if (!selectedRadio) {
+                if (keepSubmittedSelection) {
+                    statusMessage.textContent = 'The submitted ticket class is unavailable. Please choose another class.';
+                    submitButton.disabled = true;
+                    return;
+                }
+                ticketPrice = 0;
+                selectedTicketName.textContent = 'No tickets available';
+                statusMessage.textContent = 'No ticket classes are available for this day.';
+                submitButton.disabled = true;
+                updateSummary();
+                return;
+            }
+
+            ticketPrice = Number(selectedRadio.dataset.price);
+            selectedTicketName.textContent = selectedRadio.dataset.name;
+            statusMessage.textContent = 'Ticket availability updated.';
+            submitButton.disabled = false;
+            updateSummary();
+        } catch (error) {
+            if (requestId !== availabilityRequestId) return;
+            availabilityConfirmed = false;
+            console.error('Error checking ticket availability:', error);
+            statusMessage.textContent = 'Unable to check ticket availability. Please select the day again to retry.';
+            submitButton.disabled = true;
+        }
+    };
+
+    // Event Listeners
+    selectedDayLabels.forEach((label) => {
+        label.querySelector('input[name="selectedDay"]').addEventListener('change', (e) => {
+            selectedDayLabels.forEach((dayLabel) => {
+                dayLabel.classList.toggle('selected', dayLabel.querySelector('input').checked);
+            });
+            fetchTicketClassesForDay(e.currentTarget.value);
         });
     });
 
@@ -417,21 +483,13 @@
 
     ticketRadios.forEach((radio) => {
         radio.addEventListener('change', (e) => {
-            e.preventDefault();
+            if (e.currentTarget.disabled) return;
             const selected = e.currentTarget;
-
-            // Update visual and input selection
-            ticketRadios.forEach((input) => {
-                input.checked = false;
-                input.removeAttribute('checked');
-            });
-
-            selected.checked = true;
-            selected.setAttribute('checked', true);
+            submitButton.disabled = !availabilityConfirmed;
 
             // Update summary
-            const ticketName = e.target.dataset.name;
-            ticketPrice = parseInt(e.target.dataset.price);
+            const ticketName = selected.dataset.name;
+            ticketPrice = Number(selected.dataset.price);
             
             selectedTicketName.textContent = ticketName;
             updateSummary();
@@ -443,7 +501,7 @@
         autoFillForm();
     });
 
-    // Initialize ticket based on default selection
+    // Initialize ticket selection and availability for the selected weekday.
     const selectedRadio = document.querySelector('input[name="ticketClass"]:checked');
     if (selectedRadio) {
         const ticketName = selectedRadio.dataset.name;
@@ -451,6 +509,14 @@
         ticketPrice = parseInt(selectedRadio.dataset.price);
     }
     updateSummary();
+
+    const initiallySelectedDay = document.querySelector('input[name="selectedDay"]:checked');
+    if (initiallySelectedDay) {
+        fetchTicketClassesForDay(initiallySelectedDay.value);
+    } else {
+        submitButton.disabled = true;
+        document.getElementById('ticketAvailabilityStatus').textContent = 'No travel day is available for this schedule.';
+    }
 </script>
 
 <%- include('../partials/footer') %>

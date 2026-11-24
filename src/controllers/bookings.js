@@ -1,5 +1,8 @@
 
-import { getDb } from '../db/connect.js';
+import {
+    getAllTicketClasses,
+    getTicketClassesForDay,
+} from '../models/ticket-classes.js';
 import {
     getScheduleById
 } from '../models/schedules.js';
@@ -13,6 +16,57 @@ import {
     getBookingById
 } from '../models/bookings.js';
 import { generateBookingReference } from '../includes/helpers.js';
+
+const validWeekdays = [
+    'monday',
+    'tuesday',
+    'wednesday',
+    'thursday',
+    'friday',
+    'saturday',
+    'sunday'
+];
+
+const validateTicketClassAvailability = async (selectedDay, ticketClass) => {
+    if (typeof selectedDay !== 'string') {
+        return { error: 'Please select a valid travel day.' };
+    }
+
+    const normalizedDay = selectedDay.trim().toLowerCase();
+    if (!validWeekdays.includes(normalizedDay)) {
+        return { error: 'Please select a valid travel day.' };
+    }
+
+    if (typeof ticketClass !== 'string' || !ticketClass.trim()) {
+        return { error: 'Please select a valid ticket class.' };
+    }
+
+    const normalizedTicketClass = ticketClass.trim().toLowerCase();
+    const availableTicketClasses = await getTicketClassesForDay(normalizedDay);
+    const matchingTicketClass = availableTicketClasses.find(
+        (availableClass) => availableClass.class === normalizedTicketClass
+    );
+
+    if (!matchingTicketClass) {
+        return {
+            error: 'The selected ticket class is unavailable on that day. Please choose another option.'
+        };
+    }
+
+    return {
+        selectedDay: normalizedDay,
+        ticketClass: matchingTicketClass.class
+    };
+};
+
+const buildTicketOptions = (ticketClasses, trip) => ticketClasses.map((ticketClass) => ({
+    class: ticketClass.class,
+    name: ticketClass.name,
+    price: trip.distance * ticketClass.pricePerKm,
+    amenities: ticketClass.amenities,
+    description: ticketClass.description
+}));
+
 
 // Displays the booking form for a selected train schedule.
 const bookingPage = async (req, res, next) => {
@@ -35,18 +89,9 @@ const bookingPage = async (req, res, next) => {
             return next(error);
         }
 
-        const db = getDb();
-        const ticketClasses = await db.collection('ticketClasses')
-            .find({})
-            .toArray();
+        const ticketClasses = await getAllTicketClasses();
 
-        const ticketOptions = ticketClasses.map((ticketClass) => ({
-            class: ticketClass.class,
-            name: ticketClass.name,
-            price: trip.distance * ticketClass.pricePerKm,
-            amenities: ticketClass.amenities,
-            description: ticketClass.description
-        }));
+        const ticketOptions = buildTicketOptions(ticketClasses, trip);
 
         return res.render('trips/book', {
             title: 'Book Trip',
@@ -58,15 +103,56 @@ const bookingPage = async (req, res, next) => {
     }
 };
 
+
 // Processes the submitted booking form and saves the booking.
 const processBookingRequest = async (req, res, next) => {
     try {
+        const validation = await validateTicketClassAvailability(
+            req.body.selectedDay,
+            req.body.ticketClass
+        );
+
+        if (validation.error) {
+            const scheduleId = req.body.scheduleId;
+            const schedule = await getScheduleById(scheduleId);
+
+            if (!schedule) {
+                const error = new Error('Schedule not found');
+                error.status = 404;
+                return next(error);
+            }
+
+            const trip = await getTripById(schedule.tripId);
+
+            if (!trip) {
+                const error = new Error('Trip not found');
+                error.status = 404;
+                return next(error);
+            }
+
+            const ticketClasses = await getAllTicketClasses();
+            const ticketOptions = buildTicketOptions(ticketClasses, trip);
+
+            return res.status(400).render('trips/book', {
+                title: 'Book Trip',
+                schedule,
+                ticketOptions,
+                validationMessage: validation.error,
+                submittedDay: typeof req.body.selectedDay === 'string'
+                    ? req.body.selectedDay.trim().toLowerCase()
+                    : '',
+                submittedTicketClass: typeof req.body.ticketClass === 'string'
+                    ? req.body.ticketClass.trim().toLowerCase()
+                    : ''
+            });
+        }
+
         const booking = {
             id: generateBookingReference(),
             scheduleId: Number(req.body.scheduleId),
             tripId: req.body.tripId,
-            ticketClass: req.body.ticketClass,
-            selectedDay: req.body.selectedDay,
+            ticketClass: validation.ticketClass,
+            selectedDay: validation.selectedDay,
             passengers: req.body.passengers
         };
 
@@ -90,6 +176,17 @@ const createBookingApi = async (req, res) => {
             selectedDay,
             passengers
         } = req.body;
+
+        const validation = await validateTicketClassAvailability(
+            selectedDay,
+            ticketClass
+        );
+
+        if (validation.error) {
+            return res.status(400).json({
+                error: validation.error
+            });
+        }
 
         if (
             scheduleId === undefined ||
@@ -130,8 +227,8 @@ const createBookingApi = async (req, res) => {
             id: generateBookingReference(),
             scheduleId: Number(scheduleId),
             tripId,
-            ticketClass,
-            selectedDay,
+            ticketClass: validation.ticketClass,
+            selectedDay: validation.selectedDay,
             passengers
         };
 
