@@ -9,11 +9,43 @@ import {
     getSchedulesByTripId
 } from '../models/schedules.js';
 
-const getAllTrips = async (req, res) => {
-    try {
-        const trips = await findAllTrips();
+const parsePositiveInteger = (value, defaultValue) => {
+    if (value === undefined) {
+        return defaultValue;
+    }
 
-        return res.status(200).json({ trips });
+    if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+        return null;
+    }
+
+    const parsedValue = Number(value);
+
+    return Number.isSafeInteger(parsedValue) && parsedValue > 0
+        ? parsedValue
+        : null;
+};
+
+const getAllTrips = async (req, res) => {
+    const page = parsePositiveInteger(req.query.page, 1);
+    const limit = parsePositiveInteger(req.query.limit, 10);
+
+    if (page === null || limit === null) {
+        return res.status(400).json({
+            error: 'page and limit must be positive integers'
+        });
+    }
+
+    try {
+        const { trips, total } = await findAllTrips(page, limit);
+        const totalPages = Math.max(1, Math.ceil(total / limit));
+
+        return res.status(200).json({
+            trips,
+            page,
+            limit,
+            total,
+            totalPages
+        });
     } catch (error) {
         console.error('Error fetching trips:', error);
 
@@ -26,7 +58,7 @@ const getAllTrips = async (req, res) => {
 // Retrieves only trips that have at least one active schedule.
 const getAvailableTrips = async (req, res) => {
     try {
-        const trips = await findAllTrips();
+        const { trips } = await findAllTrips(1, 1000);
 
         const availabilityChecks = await Promise.all(
             trips.map(async (trip) => {
