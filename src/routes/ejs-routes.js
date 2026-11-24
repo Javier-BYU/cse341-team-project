@@ -19,6 +19,7 @@ import {
     registerUser
 } from '../controllers/auth.js';
 import { userDashboardPage } from '../controllers/dashboard.js';
+import { usersAdminPage } from '../controllers/user-admin.js';
 import { requirePageLogin, requirePageRole } from '../middleware/auth.js';
 
 const router = Router();
@@ -30,8 +31,15 @@ router.get('/login', loginPage);
 router.post('/login', loginUser);
 router.get('/logout', logoutUser);
 router.post('/logout', logoutUser);
+
+// Dashboard pages
 router.get('/admin', requirePageRole('admin'), adminPage);
 router.get('/dashboard', requirePageLogin, userDashboardPage);
+
+// Protected user management page
+router.get('/admin/users', requirePageLogin, usersAdminPage);
+
+// Access denied page
 router.get('/403', (req, res) => res.status(403).render('errors/403', {
     title: 'Forbidden'
 }));
@@ -46,6 +54,6 @@ router.post('/trips/book', processBookingRequest);
 router.get('/trips/confirmation/:bookingId', confirmationPage);
 
 // Bookings administration page
-router.get('/bookings-admin', bookingsAdminPage);
+router.get('/bookings-admin', requirePageRole('admin'), bookingsAdminPage);
 
 export default router;

@@ -1,0 +1,98 @@
+
+<%- include('./partials/header') %>
+
+<main class="content">
+    <h1>User Management</h1>
+
+    <p>
+        View and manage user accounts. You can update or delete your own
+        account, while administrators can manage all accounts.
+    </p>
+
+    <section aria-labelledby="users-heading">
+        <h2 id="users-heading">User Accounts</h2>
+
+        <p id="users-loading" role="status">
+            Loading user accounts...
+        </p>
+
+        <p id="users-error" role="alert" hidden>
+            User accounts could not be loaded. Please try again later.
+        </p>
+
+        <p id="users-empty" hidden>
+            No user accounts were found.
+        </p>
+
+        <p id="users-status" role="status" aria-live="polite"></p>
+
+        <ul id="users-list" aria-label="User accounts"></ul>
+    </section>
+
+    <section id="user-edit-section" aria-labelledby="edit-heading" hidden>
+        <h2 id="edit-heading">Edit User</h2>
+
+        <form id="user-edit-form">
+            <input type="hidden" id="edit-user-id" name="userId">
+
+            <div>
+                <label for="edit-display-name">Display Name</label>
+                <input
+                    type="text"
+                    id="edit-display-name"
+                    name="displayName"
+                    required
+                >
+            </div>
+
+            <div>
+                <label for="edit-username">Username</label>
+                <input
+                    type="text"
+                    id="edit-username"
+                    name="username"
+                    required
+                >
+            </div>
+
+            <div>
+                <label for="edit-email">Email</label>
+                <input
+                    type="email"
+                    id="edit-email"
+                    name="email"
+                    required
+                >
+            </div>
+
+            <div>
+                <label for="edit-password">New Password (optional)</label>
+                <input
+                    type="password"
+                    id="edit-password"
+                    name="password"
+                    autocomplete="new-password"
+                    minlength="8"
+                >
+                <small>Leave blank to keep the current password.</small>
+            </div>
+
+            <button type="submit">Save Changes</button>
+            <button type="button" id="cancel-edit">Cancel</button>
+        </form>
+    </section>
+
+   <nav aria-label="Dashboard navigation">
+    <ul>
+        <li><a href="/dashboard">User Dashboard</a></li>
+
+        <% if (sessionUser && sessionUser.role === 'admin') { %>
+            <li><a href="/admin">Admin Dashboard</a></li>
+        <% } %>
+    </ul>
+</nav>
+</main>
+
+<script src="/js/user-admin.js" defer></script>
+
+<%- include('./partials/footer') %>
