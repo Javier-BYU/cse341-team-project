@@ -66,4 +66,9 @@ const initializeDatabase = async (db) => {
   await bookings.createIndex({ id: 1 }, { unique: true });
 };
 
-export { initializeDatabase, roles, starterCollections };
+export {
+  initializeDatabase,
+  initializeTicketClasses,
+  roles,
+  starterCollections
+};

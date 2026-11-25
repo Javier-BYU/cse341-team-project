@@ -38,11 +38,28 @@ const router = Router();
  *   get:
  *     tags:
  *       - Trips
- *     summary: Get all scenic trips
- *     description: Returns every scenic train trip.
+ *     summary: Get a paginated list of scenic trips
+ *     description: Returns a page of scenic train trips.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         description: Page number (defaults to 1)
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         description: Number of trips per page (defaults to 10)
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 10
  *     responses:
  *       200:
- *         description: A list of trips
+ *         description: A page of trips and pagination metadata
  *         content:
  *           application/json:
  *             schema:
@@ -52,6 +69,24 @@ const router = Router();
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Trip'
+ *                 page:
+ *                   type: integer
+ *                   example: 1
+ *                 limit:
+ *                   type: integer
+ *                   example: 10
+ *                 total:
+ *                   type: integer
+ *                   example: 24
+ *                 totalPages:
+ *                   type: integer
+ *                   example: 3
+ *       400:
+ *         description: Page and limit must be positive integers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Failed to fetch trips
  *         content:
