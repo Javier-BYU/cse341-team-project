@@ -14,6 +14,11 @@
 </div>
 
 <div class="routes-grid" id="trips-list"></div>
+<nav id="trips-pagination" aria-label="Trip list pagination">
+    <button id="trips-previous" type="button" disabled>Previous</button>
+    <span id="trips-page-indicator" aria-live="polite">Page 1 of 1</span>
+    <button id="trips-next" type="button" disabled>Next</button>
+</nav>
 <div id="trips-error" hidden>Unable to load trips. Please try again later.</div>
 
 <template id="trip-card-template">

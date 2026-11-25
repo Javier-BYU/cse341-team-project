@@ -1,4 +1,3 @@
-
 import { Router } from 'express';
 
 import {
@@ -6,7 +5,8 @@ import {
     getTripById,
     createTrip,
     updateTrip,
-    deleteTrip
+    deleteTrip,
+    getAvailableTrips
 } from '../controllers/trips.js';
 
 import {
@@ -29,6 +29,11 @@ import {
 } from '../controllers/bookings.js';
 
 import {
+    getAllTicketClasses,
+    getTicketClassesForDay
+} from '../controllers/ticket-classes.js';
+
+import {
     requireApiLogin,
     requireApiRole
 } from '../middleware/auth.js';
@@ -41,11 +46,28 @@ const router = Router();
  *   get:
  *     tags:
  *       - Trips
- *     summary: Get all scenic trips
- *     description: Returns every scenic train trip.
+ *     summary: Get a paginated list of scenic trips
+ *     description: Returns a page of scenic train trips.
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         required: false
+ *         description: Page number (defaults to 1)
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         required: false
+ *         description: Number of trips per page (defaults to 10)
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 10
  *     responses:
  *       200:
- *         description: A list of trips
+ *         description: A page of trips and pagination metadata
  *         content:
  *           application/json:
  *             schema:
@@ -55,6 +77,24 @@ const router = Router();
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Trip'
+ *                 page:
+ *                   type: integer
+ *                   example: 1
+ *                 limit:
+ *                   type: integer
+ *                   example: 10
+ *                 total:
+ *                   type: integer
+ *                   example: 24
+ *                 totalPages:
+ *                   type: integer
+ *                   example: 3
+ *       400:
+ *         description: Page and limit must be positive integers
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
  *       500:
  *         description: Failed to fetch trips
  *         content:
@@ -101,6 +141,35 @@ const router = Router();
 router.get('/trips', getAllTrips);
 router.post('/trips', createTrip);
 
+
+/**
+ * @swagger
+ * /api/trips/available:
+ *   get:
+ *     tags:
+ *       - Trips
+ *     summary: Get trips available for booking
+ *     description: Returns scenic trips that have at least one active schedule.
+ *     responses:
+ *       200:
+ *         description: A list of trips with active schedules
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 trips:
+ *                   type: array
+ *                   items:
+ *                     $ref: '#/components/schemas/Trip'
+ *       500:
+ *         description: Failed to fetch available trips
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
+router.get('/trips/available', getAvailableTrips);
 
 /**
  * @swagger
