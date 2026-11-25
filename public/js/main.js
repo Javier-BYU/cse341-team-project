@@ -5,10 +5,27 @@ const hookTripsCatalog = async () => {
     const regionSelect = document.getElementById('region-filter');
     const seasonSelect = document.getElementById('season-filter');
     const errorEl = document.getElementById('trips-error');
+    const previousButton = document.getElementById('trips-previous');
+    const nextButton = document.getElementById('trips-next');
+    const pageIndicator = document.getElementById('trips-page-indicator');
 
-    if (!listEl || !templateEl || !regionSelect || !seasonSelect) {
+    if (
+        !listEl
+        || !templateEl
+        || !regionSelect
+        || !seasonSelect
+        || !previousButton
+        || !nextButton
+        || !pageIndicator
+    ) {
         return;
     }
+
+    let currentPage = 1;
+    let totalPages = 1;
+    let currentTrips = [];
+    let isLoading = false;
+    let filtersInitialized = false;
 
     const renderTrips = (trips) => {
         const selectedRegion = regionSelect.value;
@@ -59,16 +76,13 @@ const hookTripsCatalog = async () => {
         listEl.replaceChildren(fragment);
     };
 
-    try {
-        const response = await fetch('/api/trips/available');
+    const updatePagination = () => {
+        pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+        previousButton.disabled = isLoading || currentPage === 1;
+        nextButton.disabled = isLoading || currentPage === totalPages;
+    };
 
-        if (!response.ok) {
-            throw new Error(`Failed to load available trips (${response.status})`);
-        }
-
-        const payload = await response.json();
-        const trips = payload.trips || [];
-
+    const populateFilters = (trips) => {
         const regions = [
             ...new Set(trips.map((trip) => trip.region))
         ].sort();
@@ -94,18 +108,46 @@ const hookTripsCatalog = async () => {
 
             seasonSelect.append(option);
         });
+    };
 
-        regionSelect.addEventListener('change', () => renderTrips(trips));
-        seasonSelect.addEventListener('change', () => renderTrips(trips));
+    const loadTrips = async (page) => {
+        isLoading = true;
+        updatePagination();
 
-        renderTrips(trips);
-    } catch (error) {
-        console.error('Unable to load available trips:', error);
+        try {
+            const response = await fetch(`/api/trips?page=${page}&limit=10`);
 
-        if (errorEl) {
+            if (!response.ok) {
+                throw new Error(`Failed to load trips (${response.status})`);
+            }
+
+            const payload = await response.json();
+            currentTrips = payload.trips;
+            currentPage = payload.page;
+            totalPages = payload.totalPages;
+
+            if (!filtersInitialized) {
+                populateFilters(currentTrips);
+                filtersInitialized = true;
+            }
+
+            renderTrips(currentTrips);
+            errorEl.hidden = true;
+        } catch (error) {
+            console.error('Unable to load trips:', error);
             errorEl.hidden = false;
+        } finally {
+            isLoading = false;
+            updatePagination();
         }
-    }
+    };
+
+    regionSelect.addEventListener('change', () => renderTrips(currentTrips));
+    seasonSelect.addEventListener('change', () => renderTrips(currentTrips));
+    previousButton.addEventListener('click', () => loadTrips(currentPage - 1));
+    nextButton.addEventListener('click', () => loadTrips(currentPage + 1));
+
+    loadTrips(1);
 };
 
 const hookTrainsCatalog = async () => {
