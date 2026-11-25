@@ -5,6 +5,11 @@ const hookUserAdmin = () => {
     const errorEl = document.getElementById('users-error');
     const emptyEl = document.getElementById('users-empty');
     const statusEl = document.getElementById('users-status');
+    const roleFilter = document.getElementById('users-role-filter');
+    const searchInput = document.getElementById('users-search');
+    const previousButton = document.getElementById('users-previous');
+    const nextButton = document.getElementById('users-next');
+    const pageIndicator = document.getElementById('users-page-indicator');
 
     const editSection = document.getElementById('user-edit-section');
     const editForm = document.getElementById('user-edit-form');
@@ -20,6 +25,9 @@ const hookUserAdmin = () => {
     }
 
     let users = [];
+    let currentPage = 1;
+    let totalPages = 1;
+    let latestRequest = 0;
 
     // Display a message to the user.
     const showStatus = (message) => {
@@ -70,10 +78,14 @@ const hookUserAdmin = () => {
 
         usersList.replaceChildren(fragment);
         emptyEl.hidden = users.length > 0;
+        pageIndicator.textContent = `Page ${currentPage} of ${totalPages}`;
+        previousButton.disabled = currentPage <= 1;
+        nextButton.disabled = currentPage >= totalPages;
     };
 
-    // Load user accounts from the API.
+    // Load the current filtered page of user accounts from the API.
     const loadUsers = async (clearStatus = true) => {
+        const requestId = ++latestRequest;
         loadingEl.hidden = false;
         errorEl.hidden = true;
 
@@ -82,7 +94,20 @@ const hookUserAdmin = () => {
         }
 
         try {
-            const response = await fetch('/api/users');
+            const params = new URLSearchParams({
+                page: String(currentPage),
+                limit: '10'
+            });
+
+            if (roleFilter.value) {
+                params.set('role', roleFilter.value);
+            }
+
+            if (searchInput.value) {
+                params.set('search', searchInput.value);
+            }
+
+            const response = await fetch(`/api/users?${params.toString()}`);
 
             if (!response.ok) {
                 throw new Error(
@@ -96,15 +121,36 @@ const hookUserAdmin = () => {
                 throw new Error('The users response is invalid.');
             }
 
+            if (requestId !== latestRequest) {
+                return;
+            }
+
+            if (
+                Number.isInteger(data.totalPages) &&
+                currentPage > data.totalPages
+            ) {
+                currentPage = data.totalPages;
+                await loadUsers(false);
+                return;
+            }
+
             users = data.users;
+            currentPage = data.page;
+            totalPages = data.totalPages;
             renderUsers();
         } catch (error) {
+            if (requestId !== latestRequest) {
+                return;
+            }
+
             console.error('Unable to load users:', error);
             errorEl.hidden = false;
             usersList.replaceChildren();
             emptyEl.hidden = true;
         } finally {
-            loadingEl.hidden = true;
+            if (requestId === latestRequest) {
+                loadingEl.hidden = true;
+            }
         }
     };
 
@@ -213,6 +259,30 @@ const hookUserAdmin = () => {
     cancelEditButton.addEventListener('click', () => {
         closeEditForm();
         showStatus('Editing cancelled.');
+    });
+
+    roleFilter.addEventListener('change', () => {
+        currentPage = 1;
+        loadUsers();
+    });
+
+    searchInput.addEventListener('input', () => {
+        currentPage = 1;
+        loadUsers();
+    });
+
+    previousButton.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage -= 1;
+            loadUsers();
+        }
+    });
+
+    nextButton.addEventListener('click', () => {
+        if (currentPage < totalPages) {
+            currentPage += 1;
+            loadUsers();
+        }
     });
 
     // Load users when the page is initialized.

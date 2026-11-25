@@ -24,13 +24,39 @@ router.use(requireApiLogin);
  * /api/users:
  *   get:
  *     summary: Get users accessible to the logged-in user
- *     description: Administrators receive all users. Regular users receive only their own account.
+ *     description: Administrators receive all matching users. Regular users receive only their own matching account. Results are sorted by username in ascending order and never include password hashes.
  *     tags: [Users]
  *     security:
  *       - sessionCookie: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         description: Page number (defaults to 1)
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 1
+ *       - in: query
+ *         name: limit
+ *         description: Number of users per page (defaults to 10)
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *           default: 10
+ *       - in: query
+ *         name: role
+ *         description: Exact role name to filter by
+ *         schema:
+ *           type: string
+ *           enum: [admin, user]
+ *       - in: query
+ *         name: search
+ *         description: Case-insensitive substring search across display name, username, and email
+ *         schema:
+ *           type: string
  *     responses:
  *       200:
- *         description: Users retrieved successfully.
+ *         description: A page of matching users and pagination metadata.
  *         content:
  *           application/json:
  *             schema:
@@ -40,8 +66,20 @@ router.use(requireApiLogin);
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/User'
+ *                 page:
+ *                   type: integer
+ *                 limit:
+ *                   type: integer
+ *                 total:
+ *                   type: integer
+ *                 totalPages:
+ *                   type: integer
+ *       400:
+ *         description: Invalid pagination or filter parameters.
  *       401:
  *         description: Authentication required.
+ *       403:
+ *         description: Access forbidden.
  *       500:
  *         description: Internal server error.
  */

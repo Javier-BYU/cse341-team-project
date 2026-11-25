@@ -21,6 +21,24 @@ const swaggerDefinition = {
     ],
     components: {
         schemas: {
+            User: {
+                type: 'object',
+                properties: {
+                    _id: { type: 'string' },
+                    displayName: { type: 'string' },
+                    username: { type: 'string' },
+                    email: { type: 'string', format: 'email' },
+                    role: {
+                        type: 'object',
+                        properties: {
+                            name: { type: 'string', enum: ['admin', 'user'] },
+                        },
+                    },
+                    createdAt: { type: 'string', format: 'date-time' },
+                    updatedAt: { type: 'string', format: 'date-time' },
+                },
+            },
+
             Trip: {
                 type: 'object',
                 required: [

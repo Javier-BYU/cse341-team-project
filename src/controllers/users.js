@@ -1,10 +1,26 @@
 
 import {
-    getAllUsers as findAllUsers,
+    getUsers as findUsers,
     getUserById as findUserById,
     updateUser as updateUserRecord,
     deleteUser as deleteUserRecord
 } from '../models/users.js';
+
+const parsePositiveInteger = (value, defaultValue) => {
+    if (value === undefined) {
+        return defaultValue;
+    }
+
+    if (typeof value !== 'string' || !/^\d+$/.test(value)) {
+        return null;
+    }
+
+    const parsedValue = Number(value);
+
+    return Number.isSafeInteger(parsedValue) && parsedValue > 0
+        ? parsedValue
+        : null;
+};
 
 // Checks whether the signed-in user is an administrator.
 const isAdmin = (req) => req.session.user.role === 'admin';
@@ -14,25 +30,40 @@ const canManageUser = (req, userId) => (
     isAdmin(req) || req.session.user.id === userId
 );
 
-// Returns all users for administrators and only the signed-in
-// user's account for regular users.
+// Returns a filtered page of users within the signed-in user's access scope.
 const getAllUsers = async (req, res) => {
+    const page = parsePositiveInteger(req.query.page, 1);
+    const limit = parsePositiveInteger(req.query.limit, 10);
+    const { role, search } = req.query;
+
+    if (
+        page === null ||
+        limit === null ||
+        !Number.isSafeInteger((page - 1) * limit) ||
+        (role !== undefined && typeof role !== 'string') ||
+        (search !== undefined && typeof search !== 'string')
+    ) {
+        return res.status(400).json({
+            error: 'page and limit must be positive integers; role and search must be strings.'
+        });
+    }
+
     try {
-        if (!isAdmin(req)) {
-            const user = await findUserById(req.session.user.id);
+        const filters = {
+            role: role || undefined,
+            search: search || undefined,
+            userId: isAdmin(req) ? undefined : req.session.user.id
+        };
+        const { users, total } = await findUsers(page, limit, filters);
+        const totalPages = Math.max(1, Math.ceil(total / limit));
 
-            if (!user) {
-                return res.status(404).json({
-                    error: 'User not found.'
-                });
-            }
-
-            return res.status(200).json({ users: [user] });
-        }
-
-        const users = await findAllUsers();
-
-        return res.status(200).json({ users });
+        return res.status(200).json({
+            users,
+            page,
+            limit,
+            total,
+            totalPages
+        });
     } catch (error) {
         console.error('Error fetching users:', error);
 

@@ -1,4 +1,5 @@
 import User from './schemas/users.js';
+import Role from './schemas/roles.js';
 import { hashPassword } from '../includes/password.js';
 import { ensureStandardRoles, getRoleByName } from './roles.js';
 
@@ -60,12 +61,54 @@ const getUserByIdentifier = async (identifier) => {
         .lean();
 };
 
-// Retrieves all users without exposing password hashes.
-const getAllUsers = async () => User.find()
-    .select('-passwordHash')
-    .populate('role', 'name')
-    .sort({ createdAt: -1 })
-    .lean();
+// Retrieves a page of users matching the supplied access scope and filters.
+const getUsers = async (
+    page = 1,
+    limit = 10,
+    { role, search, userId } = {}
+) => {
+    const query = {};
+
+    if (userId) {
+        query._id = userId;
+    }
+
+    if (role) {
+        const roleRecord = await Role.findOne({ name: role })
+            .select('_id')
+            .lean();
+
+        if (!roleRecord) {
+            return { users: [], total: 0 };
+        }
+
+        query.role = roleRecord._id;
+    }
+
+    if (search) {
+        const escapedSearch = search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const searchPattern = new RegExp(escapedSearch, 'i');
+
+        query.$or = [
+            { displayName: searchPattern },
+            { username: searchPattern },
+            { email: searchPattern }
+        ];
+    }
+
+    const [users, total] = await Promise.all([
+        User.find(query)
+            .select('-passwordHash')
+            .populate('role', 'name')
+            .sort({ username: 1 })
+            .skip((page - 1) * limit)
+            .limit(limit)
+            .lean(),
+        User.countDocuments(query)
+    ]);
+
+    return { users, total };
+};
 
 // Retrieves one user by MongoDB ID without exposing password hashes.
 const getUserById = async (id) => User.findById(id)
@@ -127,10 +170,10 @@ const deleteUser = async (id) => User.findByIdAndDelete(id)
 export {
     createUser,
     deleteUser,
-    getAllUsers,
     getUserByEmail,
     getUserById,
     getUserByIdentifier,
     getUserByUsername,
+    getUsers,
     updateUser
 };
