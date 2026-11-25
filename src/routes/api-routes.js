@@ -4,7 +4,9 @@ import { Router } from 'express';
 import {
     getAllTrips,
     getTripById,
-    createTrip
+    createTrip,
+    updateTrip,
+    deleteTrip
 } from '../controllers/trips.js';
 
 import {
@@ -15,7 +17,9 @@ import {
 import {
     getSchedulesForTrip,
     getSchedulesForTripAndMonth,
-    createSchedule
+    getAllSchedulesController,
+    createSchedule,
+    updateScheduleTripController
 } from '../controllers/schedules.js';
 
 import {
@@ -23,7 +27,11 @@ import {
     createBookingApi,
     getMyBookings
 } from '../controllers/bookings.js';
-import { requireApiLogin } from '../middleware/auth.js';
+
+import {
+    requireApiLogin,
+    requireApiRole
+} from '../middleware/auth.js';
 
 const router = Router();
 
@@ -93,6 +101,7 @@ const router = Router();
 router.get('/trips', getAllTrips);
 router.post('/trips', createTrip);
 
+
 /**
  * @swagger
  * /api/trips/{id}:
@@ -118,8 +127,71 @@ router.post('/trips', createTrip);
  *         description: Trip not found
  *       500:
  *         description: Failed to fetch trip
+ *
+ *   put:
+ *     tags:
+ *       - Trips
+ *     summary: Update a scenic trip
+ *     description: Updates an existing trip. Admin access required.
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/Trip'
+ *     responses:
+ *       200:
+ *         description: Trip updated successfully
+ *       400:
+ *         description: Invalid trip information
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Admin access required
+ *       404:
+ *         description: Trip not found
+ *       500:
+ *         description: Failed to update trip
+ *
+ *   delete:
+ *     tags:
+ *       - Trips
+ *     summary: Delete a scenic trip
+ *     description: Deletes an existing trip. Admin access required.
+ *     security:
+ *       - sessionAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Trip deleted successfully
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: Admin access required
+ *       404:
+ *         description: Trip not found
+ *       500:
+ *         description: Failed to delete trip
  */
+
 router.get('/trips/:id', getTripById);
+
+router.put('/trips/:id', requireApiRole('admin'), updateTrip);
+router.delete('/trips/:id', requireApiRole('admin'), deleteTrip);
+
 
 /**
  * @swagger
@@ -198,7 +270,34 @@ router.get('/trips/:tripId/schedules', (req, res) => {
  *       500:
  *         description: Failed to create schedule
  */
+
+
+/**
+ * @swagger
+ * /api/schedules:
+ *   get:
+ *     tags:
+ *       - Schedules
+ *     summary: Get all existing schedules
+ *     description: Returns every train schedule.
+ *     responses:
+ *       200:
+ *         description: A list of schedules
+ *       500:
+ *         description: Failed to fetch schedules
+ */
+
+router.get('/schedules', getAllSchedulesController);
 router.post('/schedules', createSchedule);
+
+router.get('/schedules', getAllSchedulesController);
+router.post('/schedules', createSchedule);
+
+router.put(
+    '/schedules/:id',
+    requireApiRole('admin'),
+    updateScheduleTripController
+);
 
 /**
  * @swagger

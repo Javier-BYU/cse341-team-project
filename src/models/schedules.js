@@ -17,13 +17,28 @@ const getScheduleById = async (id) => {
     return Schedule.findOne({ id: Number(id) }).lean();
 };
 
+// Retrieves all existing train schedules.
+const getAllSchedules = async () => Schedule.find({}).lean();
+
 // Creates and saves a new train schedule.
 const createSchedule = async (scheduleData) => {
     return Schedule.create(scheduleData);
 };
 
+
+// Reassigns an existing schedule to another trip.
+const updateScheduleTrip = async (id, tripId) =>
+    Schedule.findOneAndUpdate(
+        { id: Number(id) },
+        { $set: { tripId } },
+        { new: true, runValidators: true }
+    ).lean();
+
+
 export {
     getScheduleById,
     getSchedulesByTripId,
-    createSchedule
+    getAllSchedules,
+    createSchedule,
+    updateScheduleTrip
 };

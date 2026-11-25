@@ -1,6 +1,74 @@
 
-import { getSchedulesByTripId, createSchedule as saveSchedule } from '../models/schedules.js';
+import {
+    getSchedulesByTripId,
+    getAllSchedules,
+    createSchedule as saveSchedule,
+    updateScheduleTrip
+} from '../models/schedules.js';
+
 import { getTripById } from '../models/trips.js';
+
+
+// Retrieves all existing schedules.
+export async function getAllSchedulesController(req, res) {
+    try {
+        const schedules = await getAllSchedules();
+
+        return res.status(200).json({ schedules });
+    } catch (error) {
+        console.error('Error fetching all schedules:', error);
+
+        return res.status(500).json({
+            error: 'Failed to fetch schedules'
+        });
+    }
+}
+
+// Reassigns an existing schedule to another trip.
+export async function updateScheduleTripController(req, res) {
+    try {
+        const { tripId } = req.body;
+
+        if (!tripId) {
+            return res.status(400).json({
+                error: 'A valid trip ID is required'
+            });
+        }
+
+        const trip = await getTripById(tripId);
+
+        if (!trip) {
+            return res.status(404).json({
+                error: 'Trip not found'
+            });
+        }
+
+        const schedule = await updateScheduleTrip(req.params.id, tripId);
+
+        if (!schedule) {
+            return res.status(404).json({
+                error: 'Schedule not found'
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Schedule updated successfully',
+            schedule
+        });
+        } catch (error) {
+        console.error('Error updating schedule:', error);
+
+        if (error.name === 'ValidationError' || error.name === 'CastError') {
+            return res.status(400).json({
+                error: 'Invalid schedule information'
+            });
+        }
+
+        return res.status(500).json({
+            error: 'Failed to update schedule'
+        });
+    }
+}
 
 // Retrieves all schedules for a trip.
 export async function getSchedulesForTrip(req, res) {

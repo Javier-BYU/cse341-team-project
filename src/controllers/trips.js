@@ -1,8 +1,9 @@
-
 import {
     getAllTrips as findAllTrips,
     getTripById as findTripById,
-    createTrip as saveTrip
+    createTrip as saveTrip,
+    updateTrip as saveTripChanges,
+    deleteTrip as removeTrip
 } from '../models/trips.js';
 
 const getAllTrips = async (req, res) => {
@@ -67,6 +68,72 @@ const createTrip = async (req, res) => {
     }
 };
 
+
+
+// Updates an existing scenic train trip.
+const updateTrip = async (req, res) => {
+    try {
+        if (!req.body || Object.keys(req.body).length === 0) {
+            return res.status(400).json({
+                error: 'Trip information is required'
+            });
+        }
+
+        // Prevent changing the trip's unique ID.
+        const { id, ...tripData } = req.body;
+
+        const trip = await saveTripChanges(req.params.id, tripData);
+
+        if (!trip) {
+            return res.status(404).json({
+                error: 'Trip not found'
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Trip updated successfully',
+            trip
+        });
+    } catch (error) {
+        console.error('Error updating trip:', error);
+
+        if (error.name === 'ValidationError' || error.name === 'CastError') {
+            return res.status(400).json({
+                error: 'Invalid trip information'
+            });
+        }
+
+        return res.status(500).json({
+            error: 'Failed to update trip'
+        });
+    }
+};
+
+// Deletes an existing scenic train trip.
+const deleteTrip = async (req, res) => {
+    try {
+        const trip = await removeTrip(req.params.id);
+
+        if (!trip) {
+            return res.status(404).json({
+                error: 'Trip not found'
+            });
+        }
+
+        return res.status(200).json({
+            message: 'Trip deleted successfully',
+            trip
+        });
+    } catch (error) {
+        console.error('Error deleting trip:', error);
+
+        return res.status(500).json({
+            error: 'Failed to delete trip'
+        });
+    }
+};
+
+
 const renderTripList = (req, res) => {
     res.render('trips/list', {
         title: 'Scenic Train Trips'
@@ -92,10 +159,21 @@ const renderTripDetails = async (req, res, next) => {
     }
 };
 
+
+const renderTripAdminPage = (req, res) => {
+    res.render('trips/admin', {
+        title: 'Manage Trips'
+    });
+};
+
+
 export {
     getAllTrips,
     getTripById,
     createTrip,
+    updateTrip,
+    deleteTrip,
     renderTripDetails,
-    renderTripList
+    renderTripList,
+    renderTripAdminPage
 };
