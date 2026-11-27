@@ -28,6 +28,7 @@ const parsePositiveInteger = (value, defaultValue) => {
 const getAllTrips = async (req, res) => {
     const page = parsePositiveInteger(req.query.page, 1);
     const limit = parsePositiveInteger(req.query.limit, 10);
+    const { region, season, search } = req.query;
 
     if (page === null || limit === null) {
         return res.status(400).json({
@@ -35,8 +36,20 @@ const getAllTrips = async (req, res) => {
         });
     }
 
+    if ([region, season, search].some((value) =>
+        value !== undefined && typeof value !== 'string'
+    )) {
+        return res.status(400).json({
+            error: 'region, season, and search must be strings'
+        });
+    }
+
     try {
-        const { trips, total } = await findAllTrips(page, limit);
+        const { trips, total } = await findAllTrips(page, limit, {
+            region: region?.trim(),
+            season: season?.trim(),
+            search: search?.trim()
+        });
         const totalPages = Math.max(1, Math.ceil(total / limit));
 
         return res.status(200).json({

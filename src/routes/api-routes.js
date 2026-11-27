@@ -57,6 +57,27 @@ const router = Router();
  *           type: integer
  *           minimum: 1
  *           default: 10
+ *       - in: query
+ *         name: region
+ *         required: false
+ *         description: Exact region to filter by
+ *         schema:
+ *           type: string
+ *         example: central
+ *       - in: query
+ *         name: season
+ *         required: false
+ *         description: Exact best season to filter by
+ *         schema:
+ *           type: string
+ *         example: autumn
+ *       - in: query
+ *         name: search
+ *         required: false
+ *         description: Case-insensitive literal search across trip names and descriptions
+ *         schema:
+ *           type: string
+ *         example: mountain
  *     responses:
  *       200:
  *         description: A page of trips and pagination metadata

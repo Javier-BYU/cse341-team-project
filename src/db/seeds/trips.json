@@ -1,164 +1,218 @@
 [
-    {
-        "id": "alpine-panorama",
-        "name": "Alpine Panorama Express",
-        "description": "Journey through the Japanese Alps with stunning mountain views and traditional villages.",
-        "region": "central",
-        "startStation": "nagoya",
-        "endStation": "toyama",
-        "duration": "4.5 hours",
-        "distance": 180,
-        "highlights": [
-            "Mount Tateyama views",
-            "Hida River gorge",
-            "Traditional alpine villages"
-        ],
-        "bestSeason": "autumn",
-        "operatingMonths": [
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11
-        ],
-        "imageUrl": "/images/routes/alpine-panorama.png"
-    },
-    {
-        "id": "coastal-breeze",
-        "name": "Coastal Breeze Line",
-        "description": "Follow the scenic coastline of the Sea of Japan with ocean views and sunset vistas.",
-        "region": "northern",
-        "startStation": "aomori",
-        "endStation": "akita",
-        "duration": "5 hours",
-        "distance": 147,
-        "highlights": [
-            "Sea of Japan coastline",
-            "Senjojiki Rock Beach",
-            "Traditional fishing villages"
-        ],
-        "bestSeason": "summer",
-        "operatingMonths": [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12
-        ],
-        "imageUrl": "/images/routes/coastal-breeze.png"
-    },
-    {
-        "id": "sakura-valley",
-        "name": "Sakura Valley Limited",
-        "description": "Experience cherry blossom season along scenic river valleys and mountain passes.",
-        "region": "kansai",
-        "startStation": "osaka",
-        "endStation": "wakayama",
-        "duration": "2.5 hours",
-        "distance": 63,
-        "highlights": [
-            "Cherry blossom valleys",
-            "Historic temples",
-            "Mountain tunnels"
-        ],
-        "bestSeason": "spring",
-        "operatingMonths": [
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10
-        ],
-        "imageUrl": "/images/routes/sakura-valley.png"
-    },
-    {
-        "id": "gorge-explorer",
-        "name": "Kurobe Gorge Explorer",
-        "description": "Navigate through dramatic gorges and cross spectacular bridges in the Northern Alps.",
-        "region": "central",
-        "startStation": "unazuki",
-        "endStation": "keyakidaira",
-        "duration": "1.5 hours",
-        "distance": 20,
-        "highlights": [
-            "Kurobe Gorge",
-            "Alpine bridges",
-            "Waterfall views"
-        ],
-        "bestSeason": "autumn",
-        "operatingMonths": [
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11
-        ],
-        "imageUrl": "/images/routes/gorge-explorer.png"
-    },
-    {
-        "id": "winter-wetlands",
-        "name": "Winter Wetlands Steam Train",
-        "description": "Steam locomotive journey through snowy wetlands famous for red-crowned cranes.",
-        "region": "hokkaido",
-        "startStation": "kushiro",
-        "endStation": "shibecha",
-        "duration": "2 hours",
-        "distance": 31,
-        "highlights": [
-            "Kushiro Wetlands",
-            "Red-crowned cranes",
-            "Steam locomotive experience"
-        ],
-        "bestSeason": "winter",
-        "operatingMonths": [
-            1,
-            2
-        ],
-        "imageUrl": "/images/routes/winter-wetlands.png"
-    },
-    {
-        "id": "romantic-gorge",
-        "name": "Sagano Romantic Train",
-        "description": "Travel along the scenic Hozu River with views of historic Kyoto gorges.",
-        "region": "kansai",
-        "startStation": "arashiyama",
-        "endStation": "kameoka",
-        "duration": "0.5 hours",
-        "distance": 7,
-        "highlights": [
-            "Hozu River gorge",
-            "Bamboo forests",
-            "Historic temples"
-        ],
-        "bestSeason": "autumn",
-        "operatingMonths": [
-            3,
-            4,
-            5,
-            6,
-            7,
-            8,
-            9,
-            10,
-            11,
-            12
-        ],
-        "imageUrl": "/images/routes/romantic-gorge.png"
-    }
+  {
+    "id": "alpine-panorama",
+    "name": "Alpine Panorama Express",
+    "description": "Journey through the Japanese Alps with stunning mountain views and traditional villages.",
+    "region": "central",
+    "startStation": "nagoya",
+    "endStation": "toyama",
+    "duration": "4.5 hours",
+    "distance": 180,
+    "highlights": [
+      "Mount Tateyama views",
+      "Hida River gorge",
+      "Traditional alpine villages"
+    ],
+    "bestSeason": "autumn",
+    "operatingMonths": [4, 5, 6, 7, 8, 9, 10, 11],
+    "imageUrl": "/images/routes/alpine-panorama.png"
+  },
+  {
+    "id": "coastal-breeze",
+    "name": "Coastal Breeze Line",
+    "description": "Follow the scenic coastline of the Sea of Japan with ocean views and sunset vistas.",
+    "region": "northern",
+    "startStation": "aomori",
+    "endStation": "akita",
+    "duration": "5 hours",
+    "distance": 147,
+    "highlights": [
+      "Sea of Japan coastline",
+      "Senjojiki Rock Beach",
+      "Traditional fishing villages"
+    ],
+    "bestSeason": "summer",
+    "operatingMonths": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    "imageUrl": "/images/routes/coastal-breeze.png"
+  },
+  {
+    "id": "sakura-valley",
+    "name": "Sakura Valley Limited",
+    "description": "Experience cherry blossom season along scenic river valleys and mountain passes.",
+    "region": "kansai",
+    "startStation": "osaka",
+    "endStation": "wakayama",
+    "duration": "2.5 hours",
+    "distance": 63,
+    "highlights": [
+      "Cherry blossom valleys",
+      "Historic temples",
+      "Mountain tunnels"
+    ],
+    "bestSeason": "spring",
+    "operatingMonths": [3, 4, 5, 6, 7, 8, 9, 10],
+    "imageUrl": "/images/routes/sakura-valley.png"
+  },
+  {
+    "id": "gorge-explorer",
+    "name": "Kurobe Gorge Explorer",
+    "description": "Navigate through dramatic gorges and cross spectacular bridges in the Northern Alps.",
+    "region": "central",
+    "startStation": "unazuki",
+    "endStation": "keyakidaira",
+    "duration": "1.5 hours",
+    "distance": 20,
+    "highlights": [
+      "Kurobe Gorge",
+      "Alpine bridges",
+      "Waterfall views"
+    ],
+    "bestSeason": "autumn",
+    "operatingMonths": [4, 5, 6, 7, 8, 9, 10, 11],
+    "imageUrl": "/images/routes/gorge-explorer.png"
+  },
+  {
+    "id": "winter-wetlands",
+    "name": "Winter Wetlands Steam Train",
+    "description": "Steam locomotive journey through snowy wetlands famous for red-crowned cranes.",
+    "region": "hokkaido",
+    "startStation": "kushiro",
+    "endStation": "shibecha",
+    "duration": "2 hours",
+    "distance": 31,
+    "highlights": [
+      "Kushiro Wetlands",
+      "Red-crowned cranes",
+      "Steam locomotive experience"
+    ],
+    "bestSeason": "winter",
+    "operatingMonths": [1, 2],
+    "imageUrl": "/images/routes/winter-wetlands.png"
+  },
+  {
+    "id": "romantic-gorge",
+    "name": "Sagano Romantic Train",
+    "description": "Travel along the scenic Hozu River with views of historic Kyoto gorges.",
+    "region": "kansai",
+    "startStation": "arashiyama",
+    "endStation": "kameoka",
+    "duration": "0.5 hours",
+    "distance": 7,
+    "highlights": [
+      "Hozu River gorge",
+      "Bamboo forests",
+      "Historic temples"
+    ],
+    "bestSeason": "autumn",
+    "operatingMonths": [3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+    "imageUrl": "/images/routes/romantic-gorge.png"
+  },
+  {
+    "id": "fuji-view-liner",
+    "name": "Fuji View Scenic Liner",
+    "description": "Enjoy panoramic views of Mount Fuji and peaceful lakeside towns along the route.",
+    "region": "central",
+    "startStation": "shinjuku",
+    "endStation": "kawaguchiko",
+    "duration": "2 hours",
+    "distance": 115,
+    "highlights": [
+      "Mount Fuji views",
+      "Lake Kawaguchi",
+      "Mountain foothills"
+    ],
+    "bestSeason": "autumn",
+    "operatingMonths": [1, 2, 10, 11, 12],
+    "imageUrl": "/images/routes/alpine-panorama.png"
+  },
+  {
+    "id": "seto-island-hopper",
+    "name": "Seto Inland Island Hopper",
+    "description": "Ride past calm island bays, coastal bridges, and historic port towns.",
+    "region": "kansai",
+    "startStation": "okayama",
+    "endStation": "takamatsu",
+    "duration": "1 hour",
+    "distance": 72,
+    "highlights": [
+      "Seto Inland Sea",
+      "Great Seto Bridge",
+      "Harbor views"
+    ],
+    "bestSeason": "spring",
+    "operatingMonths": [3, 4, 5, 6, 9, 10],
+    "imageUrl": "/images/routes/coastal-breeze.png"
+  },
+  {
+    "id": "tohoku-autumn-ridge",
+    "name": "Tohoku Autumn Ridge Express",
+    "description": "Travel through crisp mountain valleys surrounded by vibrant fall foliage.",
+    "region": "northern",
+    "startStation": "sendai",
+    "endStation": "yamagata",
+    "duration": "1.5 hours",
+    "distance": 62,
+    "highlights": [
+      "Autumn foliage",
+      "Mountain passes",
+      "Onsen valleys"
+    ],
+    "bestSeason": "autumn",
+    "operatingMonths": [9, 10, 11],
+    "imageUrl": "/images/routes/gorge-explorer.png"
+  },
+  {
+    "id": "furano-lavender-rail",
+    "name": "Furano Lavender Field Train",
+    "description": "Cross rolling hills and flower fields in central Hokkaido during warm summer days.",
+    "region": "hokkaido",
+    "startStation": "sapporo",
+    "endStation": "furano",
+    "duration": "2.5 hours",
+    "distance": 124,
+    "highlights": [
+      "Lavender fields",
+      "Rolling hills",
+      "Hokkaido countryside"
+    ],
+    "bestSeason": "summer",
+    "operatingMonths": [6, 7, 8],
+    "imageUrl": "/images/routes/sakura-valley.png"
+  },
+  {
+    "id": "shinshu-valley-cruise",
+    "name": "Shinshu Valley Panorama",
+    "description": "Follow winding river valleys and quiet rural stations across central Japan.",
+    "region": "central",
+    "startStation": "nagano",
+    "endStation": "matsumoto",
+    "duration": "1.5 hours",
+    "distance": 75,
+    "highlights": [
+      "River valleys",
+      "Castle town views",
+      "Rural stations"
+    ],
+    "bestSeason": "spring",
+    "operatingMonths": [4, 5, 6, 10, 11],
+    "imageUrl": "/images/routes/romantic-gorge.png"
+  },
+  {
+    "id": "shiretoko-ice-drift",
+    "name": "Shiretoko Drift Ice Line",
+    "description": "Experience winter coastal scenery with drift ice and snow-covered peaks.",
+    "region": "hokkaido",
+    "startStation": "abashiri",
+    "endStation": "shiretoko-shari",
+    "duration": "1 hour",
+    "distance": 51,
+    "highlights": [
+      "Drift ice coastline",
+      "Snowy peaks",
+      "Winter wildlife"
+    ],
+    "bestSeason": "winter",
+    "operatingMonths": [1, 2, 3],
+    "imageUrl": "/images/routes/winter-wetlands.png"
+  }
 ]

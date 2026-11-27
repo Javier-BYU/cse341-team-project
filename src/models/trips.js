@@ -1,14 +1,34 @@
 
 import Trip from './schemas/trips.js';
 
-const getAllTrips = async (page = 1, limit = 10) => {
+const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+const getAllTrips = async (page = 1, limit = 10, filters = {}) => {
+    const query = {};
+
+    if (filters.region) {
+        query.region = filters.region;
+    }
+
+    if (filters.season) {
+        query.bestSeason = filters.season;
+    }
+
+    if (filters.search) {
+        const searchPattern = new RegExp(escapeRegex(filters.search), 'i');
+        query.$or = [
+            { name: searchPattern },
+            { description: searchPattern }
+        ];
+    }
+
     const [trips, total] = await Promise.all([
-        Trip.find({})
+        Trip.find(query)
             .sort({ id: 1 })
             .skip((page - 1) * limit)
             .limit(limit)
             .lean(),
-        Trip.countDocuments({})
+        Trip.countDocuments(query)
     ]);
 
     return { trips, total };
