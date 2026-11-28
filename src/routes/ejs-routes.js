@@ -42,6 +42,7 @@ router.get('/trips-admin', requirePageRole('admin'), renderTripAdminPage);
 router.get('/dashboard', requirePageLogin, userDashboardPage);
 
 // Protected user management page
+router.get('/users', requirePageLogin, usersAdminPage);
 router.get('/admin/users', requirePageLogin, usersAdminPage);
 
 // Access denied page

@@ -187,7 +187,7 @@ describe('Authentication', () => {
         expect(dashboardResponse.status).toBe(200);
         expect(dashboardResponse.text).toContain('Welcome, Dashboard User.');
         expect(dashboardResponse.text).toContain('href="/bookings-admin"');
-        expect(dashboardResponse.text).toContain('href="/users-admin"');
+        expect(dashboardResponse.text).toContain('href="/users"');
         expect(dashboardResponse.text).toContain('href="/dashboard">Dashboard</a>');
         expect(dashboardResponse.text).toContain('fetch(\'/api/bookings/mine\')');
 
