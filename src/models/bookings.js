@@ -14,14 +14,31 @@ const createBooking = async (booking) => Booking.create(booking);
  */
 const getAllBookings = async () => Booking.find({}).lean();
 
+const getPassengerEmailFilter = (email) => ({
+    $expr: {
+        $in: [
+            email.trim().toLowerCase(),
+            {
+                $map: {
+                    input: { $ifNull: ['$passengers', []] },
+                    as: 'passenger',
+                    in: {
+                        $toLower: {
+                            $trim: {
+                                input: {
+                                    $ifNull: ['$$passenger.email', '']
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        ]
+    }
+});
+
 const getBookingsByPassengerEmail = async (email) => {
-    const escapedEmail = email.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    return Booking.find({
-        'passengers.email': {
-            $regex: `^${escapedEmail}$`,
-            $options: 'i'
-        }
-    }).lean();
+    return Booking.find(getPassengerEmailFilter(email)).lean();
 };
 
 /**
@@ -31,9 +48,50 @@ const getBookingsByPassengerEmail = async (email) => {
  */
 const getBookingById = async (id) => Booking.findOne({ id }).lean();
 
+/**
+ * Updates an existing booking, optionally requiring a passenger email match.
+ * The ownership condition is part of the same atomic database mutation.
+ * @param {string} id - The booking reference.
+ * @param {Object} updates - Allowlisted booking fields.
+ * @param {string|null} ownerEmail - Required passenger email for standard users.
+ * @returns {Promise<Object|null>} The updated booking or null.
+ */
+const updateBooking = async (id, updates, ownerEmail = null) => {
+    const filter = { id };
+
+    if (ownerEmail !== null) {
+        Object.assign(filter, getPassengerEmailFilter(ownerEmail));
+    }
+
+    return Booking.findOneAndUpdate(
+        filter,
+        { $set: updates },
+        { new: true, runValidators: true, lean: true }
+    );
+};
+
+/**
+ * Deletes an existing booking, optionally requiring a passenger email match.
+ * The ownership condition is part of the same atomic database mutation.
+ * @param {string} id - The booking reference.
+ * @param {string|null} ownerEmail - Required passenger email for standard users.
+ * @returns {Promise<Object|null>} The deleted booking or null.
+ */
+const deleteBooking = async (id, ownerEmail = null) => {
+    const filter = { id };
+
+    if (ownerEmail !== null) {
+        Object.assign(filter, getPassengerEmailFilter(ownerEmail));
+    }
+
+    return Booking.findOneAndDelete(filter).lean();
+};
+
 export {
     createBooking,
     getAllBookings,
     getBookingsByPassengerEmail,
-    getBookingById
+    getBookingById,
+    updateBooking,
+    deleteBooking
 };

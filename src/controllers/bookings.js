@@ -13,9 +13,12 @@ import {
     createBooking,
     getAllBookings as findAllBookings,
     getBookingsByPassengerEmail as findBookingsByPassengerEmail,
-    getBookingById
+    getBookingById,
+    updateBooking as saveBookingUpdates,
+    deleteBooking as removeBooking
 } from '../models/bookings.js';
 import { generateBookingReference } from '../includes/helpers.js';
+import { getDb } from '../db/connect.js';
 
 const validWeekdays = [
     'monday',
@@ -26,6 +29,109 @@ const validWeekdays = [
     'saturday',
     'sunday'
 ];
+
+const isScheduleActive = (schedule) => schedule?.status === true;
+
+const validatePassengers = (passengers) => {
+    const passengerFields = ['firstName', 'lastName', 'email', 'phone'];
+
+    return Array.isArray(passengers) &&
+        passengers.length >= 1 &&
+        passengers.length <= 8 &&
+        passengers.every((passenger) => (
+            passenger &&
+            typeof passenger === 'object' &&
+            !Array.isArray(passenger) &&
+            Object.keys(passenger).length === passengerFields.length &&
+            passengerFields.every((field) => (
+                typeof passenger[field] === 'string' &&
+                passenger[field].trim()
+            )) &&
+            /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(passenger.email.trim())
+        ));
+};
+
+const validateBookingUpdate = async (body) => {
+    const editableFields = [
+        'scheduleId',
+        'tripId',
+        'ticketClass',
+        'selectedDay',
+        'passengers'
+    ];
+
+    if (
+        !body ||
+        typeof body !== 'object' ||
+        Array.isArray(body) ||
+        Object.keys(body).length !== editableFields.length ||
+        Object.keys(body).some((field) => !editableFields.includes(field))
+    ) {
+        return { error: 'Provide only all editable booking fields.' };
+    }
+
+    if (
+        !Number.isInteger(body.scheduleId) ||
+        body.scheduleId <= 0 ||
+        typeof body.tripId !== 'string' ||
+        !body.tripId.trim() ||
+        !validatePassengers(body.passengers)
+    ) {
+        return { error: 'Invalid booking information.' };
+    }
+
+    const ticketValidation = await validateTicketClassAvailability(
+        body.selectedDay,
+        body.ticketClass
+    );
+
+    if (ticketValidation.error) {
+        return { error: ticketValidation.error };
+    }
+
+    const schedule = await getScheduleById(body.scheduleId);
+
+    if (
+        !schedule ||
+        !isScheduleActive(schedule) ||
+        String(schedule.tripId) !== body.tripId.trim() ||
+        !Array.isArray(schedule.daysOfWeek) ||
+        !schedule.daysOfWeek.some(
+            (day) => day.toLowerCase() === ticketValidation.selectedDay
+        )
+    ) {
+        return { error: 'The selected schedule, trip, or travel day is invalid.' };
+    }
+
+    const trip = await getTripById(schedule.tripId);
+
+    if (!trip) {
+        return { error: 'The selected trip does not exist.' };
+    }
+
+    return {
+        booking: {
+            scheduleId: schedule.id,
+            tripId: schedule.tripId,
+            ticketClass: ticketValidation.ticketClass,
+            selectedDay: ticketValidation.selectedDay,
+            passengers: body.passengers.map((passenger) => ({
+                firstName: passenger.firstName.trim(),
+                lastName: passenger.lastName.trim(),
+                email: passenger.email.trim(),
+                phone: passenger.phone.trim()
+            }))
+        }
+    };
+};
+
+const bookingHasPassengerEmail = (booking, email) => {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    return booking.passengers.some(
+        (passenger) => passenger.email.trim().toLowerCase() === normalizedEmail
+    );
+};
 
 const validateTicketClassAvailability = async (selectedDay, ticketClass) => {
     if (typeof selectedDay !== 'string') {
@@ -242,7 +348,9 @@ const createBookingApi = async (req, res) => {
         // Confirm that the selected day is available for this schedule.
         if (
             !Array.isArray(schedule.daysOfWeek) ||
-            !schedule.daysOfWeek.includes(selectedDay)
+            !schedule.daysOfWeek.some(
+                (day) => day.toLowerCase() === validation.selectedDay
+            )
         ) {
             return res.status(400).json({
                 error: 'The selected day is not available for this schedule'
@@ -262,7 +370,7 @@ const createBookingApi = async (req, res) => {
         const db = getDb();
 
         const validTicketClass = await db.collection('ticketClasses')
-            .findOne({ class: ticketClass });
+            .findOne({ class: validation.ticketClass });
 
         if (!validTicketClass) {
             return res.status(400).json({
@@ -273,8 +381,8 @@ const createBookingApi = async (req, res) => {
         // Create the booking using verified database values.
         const booking = {
             id: generateBookingReference(),
-            scheduleId: Number(scheduleId),
-            tripId,
+            scheduleId: schedule.id,
+            tripId: schedule.tripId,
             ticketClass: validation.ticketClass,
             selectedDay: validation.selectedDay,
             passengers
@@ -324,10 +432,19 @@ const confirmationPage = async (req, res, next) => {
     }
 };
 
-// Returns all bookings through the API.
+// Returns all bookings to administrators and only matching bookings to users.
 const getAllBookings = async (req, res) => {
     try {
-        const bookings = await findAllBookings();
+        const isAdmin = req.session.user.role === 'admin';
+        const email = req.session.user.email;
+
+        if (!isAdmin && (typeof email !== 'string' || !email.trim())) {
+            return res.status(403).json({ error: 'Booking access is forbidden.' });
+        }
+
+        const bookings = isAdmin
+            ? await findAllBookings()
+            : await findBookingsByPassengerEmail(email);
 
         return res.status(200).json({ bookings });
     } catch (error) {
@@ -339,10 +456,115 @@ const getAllBookings = async (req, res) => {
     }
 };
 
+const updateBookingApi = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const isAdmin = req.session.user.role === 'admin';
+        const ownerEmail = isAdmin ? null : req.session.user.email;
+        const existingBooking = await getBookingById(id);
+
+        if (!existingBooking) {
+            return res.status(404).json({ error: 'Booking not found.' });
+        }
+
+        if (!isAdmin && (
+            typeof ownerEmail !== 'string' ||
+            !bookingHasPassengerEmail(existingBooking, ownerEmail)
+        )) {
+            return res.status(403).json({ error: 'You cannot modify this booking.' });
+        }
+
+        const validation = await validateBookingUpdate(req.body);
+
+        if (validation.error) {
+            return res.status(400).json({ error: validation.error });
+        }
+
+        const booking = await saveBookingUpdates(
+            id,
+            validation.booking,
+            ownerEmail
+        );
+
+        if (!booking) {
+            const currentBooking = await getBookingById(id);
+
+            if (!currentBooking) {
+                return res.status(404).json({ error: 'Booking not found.' });
+            }
+
+            return res.status(403).json({ error: 'You cannot modify this booking.' });
+        }
+
+        return res.status(200).json({
+            message: 'Booking updated successfully.',
+            booking
+        });
+    } catch (error) {
+        console.error('Error updating booking:', error);
+
+        if (error.name === 'ValidationError' || error.name === 'CastError') {
+            return res.status(400).json({
+                error: 'Invalid booking information.',
+                details: error.message
+            });
+        }
+
+        return res.status(500).json({ error: 'Failed to update booking.' });
+    }
+};
+
+const deleteBookingApi = async (req, res) => {
+    try {
+        const id = req.params.id;
+        const isAdmin = req.session.user.role === 'admin';
+        const ownerEmail = isAdmin ? null : req.session.user.email;
+        const existingBooking = await getBookingById(id);
+
+        if (!existingBooking) {
+            return res.status(404).json({ error: 'Booking not found.' });
+        }
+
+        if (!isAdmin && (
+            typeof ownerEmail !== 'string' ||
+            !bookingHasPassengerEmail(existingBooking, ownerEmail)
+        )) {
+            return res.status(403).json({ error: 'You cannot modify this booking.' });
+        }
+
+        const booking = await removeBooking(id, ownerEmail);
+
+        if (!booking) {
+            const currentBooking = await getBookingById(id);
+
+            if (!currentBooking) {
+                return res.status(404).json({ error: 'Booking not found.' });
+            }
+
+            return res.status(403).json({ error: 'You cannot modify this booking.' });
+        }
+
+        return res.status(200).json({
+            message: 'Booking deleted successfully.',
+            booking
+        });
+    } catch (error) {
+        console.error('Error deleting booking:', error);
+
+        return res.status(500).json({ error: 'Failed to delete booking.' });
+    }
+};
+
 // Returns bookings that include the signed-in user as a passenger.
 const getMyBookings = async (req, res) => {
     try {
-        const bookings = await findBookingsByPassengerEmail(req.session.user.email);
+        const email = req.session.user.email;
+
+        if (typeof email !== 'string' || !email.trim()) {
+            return res.status(403).json({ error: 'Booking access is forbidden.' });
+        }
+
+        const bookings = await findBookingsByPassengerEmail(email);
         const userBookings = bookings.map((booking) => ({
             id: booking.id,
             tripId: booking.tripId,
@@ -375,6 +597,8 @@ export {
     createBookingApi,
     confirmationPage,
     getAllBookings,
+    updateBookingApi,
+    deleteBookingApi,
     getMyBookings,
     bookingsAdminPage
 };

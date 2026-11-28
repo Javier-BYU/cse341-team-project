@@ -2,6 +2,7 @@
 <main class="content">
     <h1>Welcome to the Admin Dashboard</h1>
     <p>Welcome, <%= sessionUser.displayName %>.</p>
+    <p><a href="/bookings-admin">Manage bookings</a></p>
     <form method="post" action="/logout">
         <button type="submit">Log out</button>
     </form>
