@@ -21,10 +21,11 @@ const swaggerDefinition = {
     ],
     components: {
         securitySchemes: {
-            sessionCookie: {
+            sessionAuth: {
                 type: 'apiKey',
                 in: 'cookie',
-                name: 'connect.sid'
+                name: 'connect.sid',
+                description: 'Session cookie used for authentication.'
             },
             csrfToken: {
                 type: 'apiKey',
