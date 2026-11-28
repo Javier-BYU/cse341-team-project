@@ -2,18 +2,22 @@
 <h1><%- title %></h1>
 
 <div id="filters">
-    Search by Region:
+    <label for="region-filter">Search by Region:</label>
     <select id="region-filter">
         <option value="all">All Regions</option>
     </select>
 
-    Search by Season:
+    <label for="season-filter">Search by Season:</label>
     <select id="season-filter">
         <option value="all">Any Season</option>
     </select>
+
+    <label for="trip-search">Search trips:</label>
+    <input id="trip-search" type="search" placeholder="Name or description">
 </div>
 
 <div class="routes-grid" id="trips-list"></div>
+<p id="trips-empty" role="status" hidden>No trips found</p>
 <nav id="trips-pagination" aria-label="Trip list pagination">
     <button id="trips-previous" type="button" disabled>Previous</button>
     <span id="trips-page-indicator" aria-live="polite">Page 1 of 1</span>
