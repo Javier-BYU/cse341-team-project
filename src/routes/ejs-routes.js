@@ -59,6 +59,6 @@ router.post('/trips/book', processBookingRequest);
 router.get('/trips/confirmation/:bookingId', confirmationPage);
 
 // Bookings administration page
-router.get('/bookings-admin', requirePageRole('admin'), bookingsAdminPage);
+router.get('/bookings-admin', requirePageLogin, bookingsAdminPage);
 
 export default router;

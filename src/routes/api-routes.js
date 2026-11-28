@@ -25,18 +25,20 @@ import {
 import {
     getAllBookings,
     createBookingApi,
-    getMyBookings
+    getMyBookings,
+    updateBookingApi,
+    deleteBookingApi
 } from '../controllers/bookings.js';
 
 import {
     getAllTicketClasses,
     getTicketClassesForDay
 } from '../controllers/ticket-classes.js';
-
 import {
     requireApiLogin,
     requireApiRole
 } from '../middleware/auth.js';
+import { issueCsrfToken, requireCsrfToken } from '../middleware/csrf.js';
 
 const router = Router();
 
@@ -380,9 +382,6 @@ router.get('/trips/:tripId/schedules', (req, res) => {
 router.get('/schedules', getAllSchedulesController);
 router.post('/schedules', createSchedule);
 
-router.get('/schedules', getAllSchedulesController);
-router.post('/schedules', createSchedule);
-
 router.put(
     '/schedules/:id',
     requireApiRole('admin'),
@@ -391,15 +390,39 @@ router.put(
 
 /**
  * @swagger
+ * /api/ticket-classes:
+ *   get:
+ *     tags:
+ *       - Bookings
+ *     summary: Get ticket classes
+ *     description: Returns ticket classes and their valid travel days for booking forms.
+ *     responses:
+ *       200:
+ *         description: Available ticket class definitions
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/TicketClass'
+ *       500:
+ *         description: Failed to fetch ticket classes
+ */
+router.get('/ticket-classes', getAllTicketClasses);
+
+/**
+ * @swagger
  * /api/bookings:
  *   get:
  *     tags:
  *       - Bookings
- *     summary: Get all bookings
- *     description: Returns all saved train bookings and their passenger details.
+ *     summary: Get accessible bookings
+ *     description: Administrators receive all bookings. Other authenticated users receive bookings containing their session email as a passenger.
+ *     security:
+ *       - sessionCookie: []
  *     responses:
  *       200:
- *         description: A list of bookings
+ *         description: Bookings accessible to the authenticated user
  *         content:
  *           application/json:
  *             schema:
@@ -409,6 +432,8 @@ router.put(
  *                   type: array
  *                   items:
  *                     $ref: '#/components/schemas/Booking'
+ *       401:
+ *         description: Authentication required
  *       500:
  *         description: Failed to fetch bookings
  *         content:
@@ -428,9 +453,9 @@ router.put(
  *           schema:
  *             $ref: '#/components/schemas/CreateBooking'
  *           example:
- *             scheduleId: 101
+ *             scheduleId: 1
  *             tripId: alpine-panorama
- *             ticketClass: First Class
+ *             ticketClass: first
  *             selectedDay: Monday
  *             passengers:
  *               - firstName: John
@@ -447,12 +472,90 @@ router.put(
  *       500:
  *         description: Failed to create booking
  *
+ * /api/csrf-token:
+ *   get:
+ *     tags:
+ *       - Bookings
+ *     summary: Get the session CSRF token
+ *     description: Returns a token required in the X-CSRF-Token header for booking updates and deletions.
+ *     security:
+ *       - sessionCookie: []
+ *     responses:
+ *       200:
+ *         description: CSRF token for the authenticated session
+ *       401:
+ *         description: Authentication required
+ *
+ * /api/bookings/{id}:
+ *   put:
+ *     tags:
+ *       - Bookings
+ *     summary: Update a booking
+ *     description: Administrators can update any booking. Other authenticated users can update only bookings that already contain their session email as a passenger. Requires a CSRF token obtained from GET /api/csrf-token.
+ *     security:
+ *       - sessionCookie: []
+ *         csrfToken: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Booking reference.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/UpdateBooking'
+ *     responses:
+ *       200:
+ *         description: Booking updated successfully
+ *       400:
+ *         description: Invalid or unsupported booking fields
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: CSRF token invalid or booking not owned by the user
+ *       404:
+ *         description: Booking not found
+ *       500:
+ *         description: Unexpected server error
+ *   delete:
+ *     tags:
+ *       - Bookings
+ *     summary: Delete a booking
+ *     description: Administrators can delete any booking. Other authenticated users can delete only bookings that already contain their session email as a passenger. Requires a CSRF token obtained from GET /api/csrf-token.
+ *     security:
+ *       - sessionCookie: []
+ *         csrfToken: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Booking reference.
+ *     responses:
+ *       200:
+ *         description: Booking deleted successfully
+ *       401:
+ *         description: Authentication required
+ *       403:
+ *         description: CSRF token invalid or booking not owned by the user
+ *       404:
+ *         description: Booking not found
+ *       500:
+ *         description: Unexpected server error
+ *
  * /api/bookings/mine:
  *   get:
  *     tags:
  *       - Bookings
  *     summary: Get the signed-in user's bookings
  *     description: Returns bookings that list the signed-in user's email as a passenger.
+ *     security:
+ *       - sessionCookie: []
  *     responses:
  *       200:
  *         description: The user's bookings
@@ -462,7 +565,10 @@ router.put(
  *         description: Failed to fetch user bookings
  */
 router.get('/bookings/mine', requireApiLogin, getMyBookings);
-router.get('/bookings', getAllBookings);
+router.get('/csrf-token', requireApiLogin, issueCsrfToken);
+router.get('/bookings', requireApiLogin, getAllBookings);
+router.put('/bookings/:id', requireApiLogin, requireCsrfToken, updateBookingApi);
+router.delete('/bookings/:id', requireApiLogin, requireCsrfToken, deleteBookingApi);
 router.post('/bookings', createBookingApi);
 
 /**

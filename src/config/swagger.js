@@ -26,6 +26,11 @@ const swaggerDefinition = {
                 in: 'cookie',
                 name: 'connect.sid',
                 description: 'Session cookie used for authentication.'
+            },
+            csrfToken: {
+                type: 'apiKey',
+                in: 'header',
+                name: 'X-CSRF-Token'
             }
         },
         schemas: {
@@ -88,6 +93,7 @@ const swaggerDefinition = {
 
             Passenger: {
                 type: 'object',
+                additionalProperties: false,
                 required: [
                     'firstName',
                     'lastName',
@@ -115,6 +121,33 @@ const swaggerDefinition = {
                 },
             },
 
+            TicketClass: {
+                type: 'object',
+                required: [
+                    'class',
+                    'name',
+                    'pricePerKm',
+                    'availableDays',
+                    'amenities',
+                    'description',
+                ],
+                properties: {
+                    class: { type: 'string', example: 'standard' },
+                    name: { type: 'string', example: 'Standard Class' },
+                    pricePerKm: { type: 'number', example: 80 },
+                    availableDays: {
+                        type: 'array',
+                        items: { type: 'string' },
+                        example: ['monday', 'tuesday', 'sunday'],
+                    },
+                    amenities: {
+                        type: 'array',
+                        items: { type: 'string' },
+                    },
+                    description: { type: 'string' },
+                },
+            },
+
             CreateBooking: {
                 type: 'object',
                 required: [
@@ -127,7 +160,7 @@ const swaggerDefinition = {
                 properties: {
                     scheduleId: {
                         type: 'integer',
-                        example: 101,
+                        example: 1,
                         description: 'ID of the selected train schedule.',
                     },
                     tripId: {
@@ -137,7 +170,7 @@ const swaggerDefinition = {
                     },
                     ticketClass: {
                         type: 'string',
-                        example: 'First Class',
+                        example: 'first',
                     },
                     selectedDay: {
                         type: 'string',
@@ -146,6 +179,7 @@ const swaggerDefinition = {
                     passengers: {
                         type: 'array',
                         minItems: 1,
+                        maxItems: 8,
                         items: {
                             $ref: '#/components/schemas/Passenger',
                         },
@@ -170,7 +204,7 @@ const swaggerDefinition = {
                     },
                     scheduleId: {
                         type: 'integer',
-                        example: 101,
+                        example: 1,
                     },
                     tripId: {
                         type: 'string',
@@ -178,7 +212,7 @@ const swaggerDefinition = {
                     },
                     ticketClass: {
                         type: 'string',
-                        example: 'First Class',
+                        example: 'first',
                     },
                     selectedDay: {
                         type: 'string',
@@ -197,6 +231,45 @@ const swaggerDefinition = {
                     updatedAt: {
                         type: 'string',
                         format: 'date-time',
+                    },
+                },
+            },
+
+            UpdateBooking: {
+                type: 'object',
+                additionalProperties: false,
+                required: [
+                    'scheduleId',
+                    'tripId',
+                    'ticketClass',
+                    'selectedDay',
+                    'passengers',
+                ],
+                properties: {
+                    scheduleId: {
+                        type: 'integer',
+                        minimum: 1,
+                        example: 1,
+                    },
+                    tripId: {
+                        type: 'string',
+                        example: 'alpine-panorama',
+                    },
+                    ticketClass: {
+                        type: 'string',
+                        example: 'first',
+                    },
+                    selectedDay: {
+                        type: 'string',
+                        example: 'Monday',
+                    },
+                    passengers: {
+                        type: 'array',
+                        minItems: 1,
+                        maxItems: 8,
+                        items: {
+                            $ref: '#/components/schemas/Passenger',
+                        },
                     },
                 },
             },
