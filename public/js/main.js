@@ -4,7 +4,9 @@ const hookTripsCatalog = async () => {
     const templateEl = document.getElementById('trip-card-template');
     const regionSelect = document.getElementById('region-filter');
     const seasonSelect = document.getElementById('season-filter');
+    const searchInput = document.getElementById('trip-search');
     const errorEl = document.getElementById('trips-error');
+    const emptyEl = document.getElementById('trips-empty');
     const previousButton = document.getElementById('trips-previous');
     const nextButton = document.getElementById('trips-next');
     const pageIndicator = document.getElementById('trips-page-indicator');
@@ -14,6 +16,7 @@ const hookTripsCatalog = async () => {
         || !templateEl
         || !regionSelect
         || !seasonSelect
+        || !searchInput
         || !previousButton
         || !nextButton
         || !pageIndicator
@@ -23,21 +26,14 @@ const hookTripsCatalog = async () => {
 
     let currentPage = 1;
     let totalPages = 1;
-    let currentTrips = [];
     let isLoading = false;
     let filtersInitialized = false;
+    let activeRequest;
 
     const renderTrips = (trips) => {
-        const selectedRegion = regionSelect.value;
-        const selectedSeason = seasonSelect.value;
         const fragment = document.createDocumentFragment();
 
-        const filteredTrips = trips.filter((trip) =>
-            (selectedRegion === 'all' || trip.region === selectedRegion)
-            && (selectedSeason === 'all' || trip.bestSeason === selectedSeason)
-        );
-
-        filteredTrips.forEach((trip) => {
+        trips.forEach((trip) => {
             const card = templateEl.content.cloneNode(true);
             const cardEl = card.querySelector('.route-card');
 
@@ -74,6 +70,7 @@ const hookTripsCatalog = async () => {
         });
 
         listEl.replaceChildren(fragment);
+        emptyEl.hidden = trips.length > 0;
     };
 
     const updatePagination = () => {
@@ -111,39 +108,70 @@ const hookTripsCatalog = async () => {
     };
 
     const loadTrips = async (page) => {
+        if (activeRequest) {
+            activeRequest.abort();
+        }
+
+        activeRequest = new AbortController();
+        const requestSignal = activeRequest.signal;
         isLoading = true;
         updatePagination();
 
         try {
-            const response = await fetch(`/api/trips?page=${page}&limit=10`);
+            const params = new URLSearchParams({
+                page: String(page),
+                limit: '10'
+            });
+
+            if (regionSelect.value !== 'all') {
+                params.set('region', regionSelect.value);
+            }
+
+            if (seasonSelect.value !== 'all') {
+                params.set('season', seasonSelect.value);
+            }
+
+            if (searchInput.value.trim()) {
+                params.set('search', searchInput.value.trim());
+            }
+
+            const response = await fetch(`/api/trips?${params}`, {
+                signal: requestSignal
+            });
 
             if (!response.ok) {
                 throw new Error(`Failed to load trips (${response.status})`);
             }
 
             const payload = await response.json();
-            currentTrips = payload.trips;
             currentPage = payload.page;
             totalPages = payload.totalPages;
 
             if (!filtersInitialized) {
-                populateFilters(currentTrips);
+                populateFilters(payload.trips);
                 filtersInitialized = true;
             }
 
-            renderTrips(currentTrips);
+            renderTrips(payload.trips);
             errorEl.hidden = true;
         } catch (error) {
+            if (error.name === 'AbortError') {
+                return;
+            }
+
             console.error('Unable to load trips:', error);
             errorEl.hidden = false;
         } finally {
-            isLoading = false;
-            updatePagination();
+            if (!requestSignal.aborted) {
+                isLoading = false;
+                updatePagination();
+            }
         }
     };
 
-    regionSelect.addEventListener('change', () => renderTrips(currentTrips));
-    seasonSelect.addEventListener('change', () => renderTrips(currentTrips));
+    regionSelect.addEventListener('change', () => loadTrips(1));
+    seasonSelect.addEventListener('change', () => loadTrips(1));
+    searchInput.addEventListener('input', () => loadTrips(1));
     previousButton.addEventListener('click', () => loadTrips(currentPage - 1));
     nextButton.addEventListener('click', () => loadTrips(currentPage + 1));
 

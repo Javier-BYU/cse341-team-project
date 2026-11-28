@@ -20,6 +20,14 @@ const swaggerDefinition = {
         },
     ],
     components: {
+        securitySchemes: {
+            sessionAuth: {
+                type: 'apiKey',
+                in: 'cookie',
+                name: 'connect.sid',
+                description: 'Session cookie used for authentication.'
+            }
+        },
         schemas: {
             User: {
                 type: 'object',

@@ -6,10 +6,13 @@ import {
     confirmationPage,
     bookingsAdminPage
 } from '../controllers/bookings.js';
+
 import {
     renderTripDetails,
-    renderTripList
+    renderTripList,
+    renderTripAdminPage
 } from '../controllers/trips.js';
+
 import {
     adminPage,
     loginPage,
@@ -18,6 +21,7 @@ import {
     registerPage,
     registerUser
 } from '../controllers/auth.js';
+
 import { userDashboardPage } from '../controllers/dashboard.js';
 import { usersAdminPage } from '../controllers/user-admin.js';
 import { requirePageLogin, requirePageRole } from '../middleware/auth.js';
@@ -34,6 +38,7 @@ router.post('/logout', logoutUser);
 
 // Dashboard pages
 router.get('/admin', requirePageRole('admin'), adminPage);
+router.get('/trips-admin', requirePageRole('admin'), renderTripAdminPage);
 router.get('/dashboard', requirePageLogin, userDashboardPage);
 
 // Protected user management page
