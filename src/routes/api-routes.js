@@ -32,7 +32,6 @@ import {
     getAllTicketClasses,
     getTicketClassesForDay
 } from '../controllers/ticket-classes.js';
-import { requireApiLogin } from '../middleware/auth.js';
 import usersRoutes from './users.js';
 
 import {
